@@ -20,12 +20,12 @@ from typing import Optional, Tuple, Union
 import gin
 import numpy as np
 from tensor2robot.meta_learning import meta_tfdata
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_probability as tfp
-from tensorflow.contrib import slim as contrib_slim
+# from tensorflow.contrib import slim as contrib_slim
+# slim = contrib_slim
 
-slim = contrib_slim
-
+import tf_slim as slim
 
 def get_mixture_distribution(
     params,
@@ -103,11 +103,11 @@ def predict_mdn_params(
       scope='mdn_params')
   if not condition_sigmas:
     # Sigmas initialized so that softplus(sigmas) = 1.
-    sigmas = tf.get_variable(
+    sigmas = tf.compat.v1.get_variable(
         'mdn_stddev_inputs',
         shape=[num_sigmas],
         dtype=tf.float32,
-        initializer=tf.constant_initializer(np.log(np.e - 1)))
+        initializer=tf.compat.v1.constant_initializer(np.log(np.e - 1)))
     tiled_sigmas = tf.tile(
         sigmas[None], tf.stack([tf.shape(dist_params)[0], 1]))
     dist_params = tf.concat([dist_params, tiled_sigmas], axis=-1)
@@ -121,7 +121,7 @@ def gaussian_mixture_approximate_mode(
   mode_alpha = gm.mixture_distribution.mode()[Ellipsis, None]
   mus = gm.components_distribution.mean()
   # Gather the mean of the most likely component.
-  return tf.squeeze(tf.batch_gather(mus, mode_alpha), axis=-2)
+  return tf.squeeze(tf.compat.v1.batch_gather(mus, mode_alpha), axis=-2)
 
 
 @gin.configurable

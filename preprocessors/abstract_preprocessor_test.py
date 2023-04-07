@@ -16,7 +16,7 @@
 """Tests for tensor2robot.preprocessors.abstract_preprocessor."""
 
 from tensor2robot.preprocessors import abstract_preprocessor
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class AbstractPreprocessorTest(tf.test.TestCase):

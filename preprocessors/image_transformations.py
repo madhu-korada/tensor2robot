@@ -19,7 +19,7 @@ from typing import Callable, List, Optional, Sequence
 
 import gin
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 def RandomCropImages(images, input_shape,
@@ -48,10 +48,10 @@ def RandomCropImages(images, input_shape,
   max_y = int(input_shape[0]) - int(target_shape[0])
   max_x = int(input_shape[1]) - int(target_shape[1])
   with tf.control_dependencies(
-      [tf.assert_greater_equal(max_x, 0),
-       tf.assert_greater_equal(max_y, 0)]):
-    offset_y = tf.random_uniform((), maxval=max_y + 1, dtype=tf.int32)
-    offset_x = tf.random_uniform((), maxval=max_x + 1, dtype=tf.int32)
+      [tf.compat.v1.assert_greater_equal(max_x, 0),
+       tf.compat.v1.assert_greater_equal(max_y, 0)]):
+    offset_y = tf.random.uniform((), maxval=max_y + 1, dtype=tf.int32)
+    offset_x = tf.random.uniform((), maxval=max_x + 1, dtype=tf.int32)
     return [
         tf.image.crop_to_bounding_box(img, offset_y, offset_x,
                                       int(target_shape[0]),
@@ -85,7 +85,7 @@ def CenterCropImages(images, input_shape,
   assert_ops = []
   for image in images:
     assert_ops.append(
-        tf.assert_equal(
+        tf.compat.v1.assert_equal(
             input_shape[:2],
             tf.shape(image)[1:3],
             message=('All images must have same width and height'
@@ -134,7 +134,7 @@ def CustomCropImages(images, input_shape,
   for image, target_location in zip(images, target_locations):
     # Assert all images have the same shape.
     assert_ops.append(
-        tf.assert_equal(
+        tf.compat.v1.assert_equal(
             input_shape[:2],
             tf.shape(image)[1:3],
             message=('All images must have same width and height'
@@ -217,10 +217,10 @@ def ApplyPhotometricImageDistortions(
     images: Tensor of shape [batch_size, h, w, 3] containing a batch of images
       resulting from applying random photometric distortions to the inputs.
   """
-  with tf.variable_scope('photometric_distortions'):
+  with tf.compat.v1.variable_scope('photometric_distortions'):
     # Adjust brightness to a random level.
     if random_brightness:
-      delta = tf.random_uniform([], -max_delta_brightness, max_delta_brightness)
+      delta = tf.random.uniform([], -max_delta_brightness, max_delta_brightness)
       for i, image in enumerate(images):
         images[i] = tf.image.adjust_brightness(image, delta)
 
@@ -228,13 +228,13 @@ def ApplyPhotometricImageDistortions(
     if random_saturation:
       lower = lower_saturation
       upper = upper_saturation
-      saturation_factor = tf.random_uniform([], lower, upper)
+      saturation_factor = tf.random.uniform([], lower, upper)
       for i, image in enumerate(images):
         images[i] = tf.image.adjust_saturation(image, saturation_factor)
 
     # Randomly shift the hue.
     if random_hue:
-      delta = tf.random_uniform([], -max_delta_hue, max_delta_hue)
+      delta = tf.random.uniform([], -max_delta_hue, max_delta_hue)
       for i, image in enumerate(images):
         images[i] = tf.image.adjust_hue(image, delta)
 
@@ -242,14 +242,14 @@ def ApplyPhotometricImageDistortions(
     if random_contrast:
       lower = lower_contrast
       upper = upper_contrast
-      contrast_factor = tf.random_uniform([], lower, upper)
+      contrast_factor = tf.random.uniform([], lower, upper)
       for i, image in enumerate(images):
         images[i] = tf.image.adjust_contrast(image, contrast_factor)
 
     # Add random Gaussian noise.
     if random_noise_level:
       for i, image in enumerate(images):
-        rnd_noise = tf.random_normal(tf.shape(image), stddev=random_noise_level)
+        rnd_noise = tf.random.normal(tf.shape(image), stddev=random_noise_level)
         img_shape = tf.shape(image)
         def ImageClosure(value):
           return lambda: value
@@ -312,11 +312,11 @@ def ApplyPhotometricImageDistortionsParallel(
     images: Tensor of shape [batch_size, h, w, 3] containing a batch of images
       resulting from applying random photometric distortions to the inputs.
   """
-  with tf.variable_scope('photometric_distortions'):
+  with tf.compat.v1.variable_scope('photometric_distortions'):
     def SingleImageDistortion(image):
       # Adjust brightness to a random level.
       if random_brightness:
-        delta = tf.random_uniform([], -max_delta_brightness,
+        delta = tf.random.uniform([], -max_delta_brightness,
                                   max_delta_brightness)
         image = tf.image.adjust_brightness(image, delta)
 
@@ -324,24 +324,24 @@ def ApplyPhotometricImageDistortionsParallel(
       if random_saturation:
         lower = lower_saturation
         upper = upper_saturation
-        saturation_factor = tf.random_uniform([], lower, upper)
+        saturation_factor = tf.random.uniform([], lower, upper)
         image = tf.image.adjust_saturation(image, saturation_factor)
 
       # Randomly shift the hue.
       if random_hue:
-        delta = tf.random_uniform([], -max_delta_hue, max_delta_hue)
+        delta = tf.random.uniform([], -max_delta_hue, max_delta_hue)
         image = tf.image.adjust_hue(image, delta)
 
       # Adjust contrast to a random level.
       if random_contrast:
         lower = lower_contrast
         upper = upper_contrast
-        contrast_factor = tf.random_uniform([], lower, upper)
+        contrast_factor = tf.random.uniform([], lower, upper)
         image = tf.image.adjust_contrast(image, contrast_factor)
 
       # Add random Gaussian noise.
       if random_noise_level:
-        rnd_noise = tf.random_normal(tf.shape(image), stddev=random_noise_level)
+        rnd_noise = tf.random.normal(tf.shape(image), stddev=random_noise_level)
         img_shape = tf.shape(image)
         def ImageClosure(value):
           return lambda: value
@@ -374,24 +374,24 @@ def ApplyPhotometricImageDistortionsCheap(
     images: Tensor of shape [batch_size, h, w, 3] containing a batch of images
       resulting from applying random photometric distortions to the inputs.
   """
-  with tf.name_scope('photometric_distortion'):
+  with tf.compat.v1.name_scope('photometric_distortion'):
     channels = tf.unstack(images, axis=-1)
     # Per-channel random gamma correction.
     # Lower gamma = brighter image, decreased contrast.
     # Higher gamma = dark image, increased contrast.
-    gamma_corrected = [c**tf.random_uniform([], 0.5, 1.5) for c in channels]
+    gamma_corrected = [c**tf.random.uniform([], 0.5, 1.5) for c in channels]
     images = tf.stack(gamma_corrected, axis=-1)
     return images
 
 
 def ApplyRandomFlips(images):
   """Randomly flips images across x-axis and y-axis."""
-  with tf.name_scope('random_flips'):
+  with tf.compat.v1.name_scope('random_flips'):
     # This is consistent for the entire batch, which guarantees it'll be
     # consistent for the episode, but will correlate flips across the batch.
     # Seems fine for now.
-    left_flip = tf.random_uniform([]) > 0.5
-    up_flip = tf.random_uniform([]) > 0.5
+    left_flip = tf.random.uniform([]) > 0.5
+    up_flip = tf.random.uniform([]) > 0.5
     images = tf.cond(
         left_flip, lambda: tf.image.flip_left_right(images), lambda: images)
     images = tf.cond(
@@ -432,18 +432,18 @@ def ApplyDepthImageDistortions(depth_images,
       the inputs.
   """
   assert depth_images[0].get_shape().as_list()[-1] == 1
-  with tf.variable_scope('distortions_depth_images'):
+  with tf.compat.v1.variable_scope('distortions_depth_images'):
     # Add random Gaussian noise.
     if random_noise_level:
       for i, image in enumerate(depth_images):
         img_shape = tf.shape(image)
-        rnd_noise = tf.random_normal(img_shape, stddev=random_noise_level)
+        rnd_noise = tf.random.normal(img_shape, stddev=random_noise_level)
 
         def ReturnImageTensor(value):
           return lambda: value
 
         if scaling_noise:
-          alpha = tf.random_gamma([], gamma_shape, gamma_scale_inverse)
+          alpha = tf.random.gamma([], gamma_shape, gamma_scale_inverse)
         image = tf.cond(
             tf.reduce_all(
                 tf.greater(

@@ -19,14 +19,14 @@ import fnmatch
 import random
 from absl import flags
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 FLAGS = flags.FLAGS
 GATE_OP = 1
 PCGRAD_LOSSES_COLLECTION = "pcgrad_losses"
 
 
-class PCGrad(tf.train.Optimizer):
+class PCGrad(tf.compat.v1.train.Optimizer):
   """Tensorflow implementation of PCGrad.
 
   Gradient Surgery for Multi-Task Learning:
@@ -94,7 +94,7 @@ class PCGrad(tf.train.Optimizer):
                         colocate_gradients_with_ops=False,
                         grad_loss=None):
     if self._use_collection_losses:
-      loss = tf.get_collection(PCGRAD_LOSSES_COLLECTION)
+      loss = tf.compat.v1.get_collection(PCGRAD_LOSSES_COLLECTION)
     assert isinstance(loss, list), "The loss is not a list: %s" % type(loss)
     random.shuffle(loss)
 
@@ -115,7 +115,6 @@ class PCGrad(tf.train.Optimizer):
           var_list=other_vars,
           gate_gradients=gate_gradients,
           aggregation_method=aggregation_method,
-          colocate_gradients_with_ops=colocate_gradients_with_ops,
           grad_loss=grad_loss)
     grads_and_vars = pcgrad_grads_and_vars + other_grads_and_vars
     return grads_and_vars

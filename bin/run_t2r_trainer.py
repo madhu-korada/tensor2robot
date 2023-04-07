@@ -19,7 +19,7 @@ from absl import app
 from absl import flags
 import gin
 from tensor2robot.utils import train_eval
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 FLAGS = flags.FLAGS
@@ -32,5 +32,5 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
   app.run(main)

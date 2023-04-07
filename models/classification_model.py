@@ -23,7 +23,7 @@ import gin
 import six
 from tensor2robot.models import abstract_model
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS
@@ -43,7 +43,7 @@ ExportOutputType = abstract_model.ExportOutputType
 class ClassificationModel(abstract_model.AbstractT2RModel):
   """Classification model."""
 
-  def __init__(self, loss_function=tf.losses.log_loss, **kwargs):
+  def __init__(self, loss_function=tf.compat.v1.losses.log_loss, **kwargs):
     """Constructor for ClassificationModel.
 
     Args:
@@ -154,7 +154,7 @@ class ClassificationModel(abstract_model.AbstractT2RModel):
                            list(outputs.keys())))
 
     if self.use_summaries(params):
-      tf.summary.histogram('a_t_predicted', outputs['a_predicted'])
+      tf.compat.v1.summary.histogram('a_t_predicted', outputs['a_predicted'])
     return outputs
 
   def model_train_fn(self,
@@ -205,24 +205,24 @@ class ClassificationModel(abstract_model.AbstractT2RModel):
                     config = None,
                     params = None):
     """See base class."""
-    eval_mse = tf.metrics.mean_squared_error(
+    eval_mse = tf.compat.v1.metrics.mean_squared_error(
         labels=labels.classes,
         predictions=inference_outputs['a_predicted'],
         name='eval_mse')
 
     predictions_rounded = tf.round(inference_outputs['a_predicted'])
 
-    eval_precision = tf.metrics.precision(
+    eval_precision = tf.compat.v1.metrics.precision(
         labels=labels.classes,
         predictions=predictions_rounded,
         name='eval_precision')
 
-    eval_accuracy = tf.metrics.accuracy(
+    eval_accuracy = tf.compat.v1.metrics.accuracy(
         labels=labels.classes,
         predictions=predictions_rounded,
         name='eval_accuracy')
 
-    eval_recall = tf.metrics.recall(
+    eval_recall = tf.compat.v1.metrics.recall(
         labels=labels.classes,
         predictions=predictions_rounded,
         name='eval_recall')

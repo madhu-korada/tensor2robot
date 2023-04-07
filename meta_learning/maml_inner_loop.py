@@ -20,7 +20,7 @@ from typing import List, Mapping, Optional, Text, Tuple
 import gin
 import six
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 @gin.configurable
@@ -84,12 +84,12 @@ class MAMLInnerLoopGradientDescent(object):
     try:
       return self._lr_cache[var_name]
     except KeyError:
-      with tf.variable_scope(
-          'inner_learning_rates', reuse=tf.AUTO_REUSE, use_resource=True):
+      with tf.compat.v1.variable_scope(
+          'inner_learning_rates', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
         name = '_'.join(six.ensure_str(var_name).split('/')) + '_inner_lr'
-        learning_rate = tf.get_variable(
+        learning_rate = tf.compat.v1.get_variable(
             name, shape=(), dtype=tf.float32,
-            initializer=tf.initializers.constant(self._learning_rate))
+            initializer=tf.compat.v1.initializers.constant(self._learning_rate))
       self._lr_cache[var_name] = learning_rate
       return learning_rate
 
@@ -97,10 +97,10 @@ class MAMLInnerLoopGradientDescent(object):
     """Add parameter summaries for the MAML inner loop."""
     if self._learn_inner_lr:
       for name, var in self._lr_cache.items():
-        tf.summary.scalar('inner_loop_learning_rates/' + six.ensure_str(name),
+        tf.compat.v1.summary.scalar('inner_loop_learning_rates/' + six.ensure_str(name),
                           var)
     else:
-      tf.summary.scalar('inner_loop_learning_rate',
+      tf.compat.v1.summary.scalar('inner_loop_learning_rate',
                         tf.constant(self._learning_rate))
 
   def _create_variable_getter_fn(self):
@@ -262,7 +262,7 @@ class MAMLInnerLoopGradientDescent(object):
       params = {}
     params['is_inner_loop'] = True
     for train_features, train_labels in inputs_list[:-1]:
-      with tf.variable_scope(
+      with tf.compat.v1.variable_scope(
           'inner_loop', custom_getter=self._create_variable_getter_fn()):
         outputs = inference_network_fn(
             features=train_features,
@@ -288,7 +288,7 @@ class MAMLInnerLoopGradientDescent(object):
     # Compute the final inner outputs and loss to monitor if the network
     # adaptation actually helps.
     final_train_features, final_train_labels = inputs_list[-2]
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         'inner_loop', custom_getter=self._create_variable_getter_fn()):
       final_inner_outputs = inference_network_fn(
           features=final_train_features,
@@ -305,7 +305,7 @@ class MAMLInnerLoopGradientDescent(object):
         params=params)
     inner_losses.append(self._extract_train_loss(final_train_fn_result))
 
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         'inner_loop', custom_getter=self._create_variable_getter_fn()):
       # Compute the conditioned outputs, the actual outputs of the overall
       # model. These outputs are used in the outer loop to determine the overall
@@ -318,7 +318,7 @@ class MAMLInnerLoopGradientDescent(object):
     # into the model changes due to the inner loop. Typically, these outputs
     # are only used for summary generations, therefore do not add a big
     # overhead.
-    with tf.variable_scope('inner_loop', reuse=True):
+    with tf.compat.v1.variable_scope('inner_loop', reuse=True):
       params['is_inner_loop'] = True
       unconditioned_outputs = inference_network_fn(
           features=val_features, labels=val_labels, mode=mode, params=params)

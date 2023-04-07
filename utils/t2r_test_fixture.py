@@ -28,7 +28,7 @@ import numpy as np
 from tensor2robot.input_generators import default_input_generator
 from tensor2robot.utils import train_eval
 from tensor2robot.utils import train_eval_test_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 from tensorflow.python.tpu import tpu  # pylint: disable=g-direct-tensorflow-import
@@ -161,7 +161,7 @@ class T2RModelFixture(object):
     # To get deterministic random preprocessing. Note that model init does
     # not seem to respect this so initialize from the same checkpoint when
     # using recordio_train.
-    tf.set_random_seed(123)
+    tf.compat.v1.set_random_seed(123)
     model_dir = self.recordio_train(
         module_name, model_name, file_patterns)
     model_data_arr = np.load(

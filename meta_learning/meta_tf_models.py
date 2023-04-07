@@ -33,15 +33,17 @@ from tensor2robot.models import abstract_model
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.utils import tensorspec_utils as utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
-from tensorflow.contrib import framework as contrib_framework
+import tensorflow as tf  # tf
+# from tensorflow.contrib import framework as contrib_framework
 
 TRAIN = tf_estimator.ModeKeys.TRAIN
 EVAL = tf_estimator.ModeKeys.EVAL
 PREDICT = tf_estimator.ModeKeys.PREDICT
 
-framework = contrib_framework
-nest = framework.nest
+# framework = contrib_framework
+# nest = framework.nest
+from tensorflow.python.util import nest
+
 # pylint: disable=invalid-name
 TensorSpec = utils.ExtendedTensorSpec
 TrainValPair = meta_tfdata.TrainValPair
@@ -53,7 +55,7 @@ def select_mode(val_mode, train, val):
   # the c interface.
   val_dict = utils.flatten_spec_structure(val).to_dict()
   train_dict = utils.flatten_spec_structure(train).to_dict()
-  select_mode_fn = lambda train, val: tf.where(val_mode, x=val, y=train)
+  select_mode_fn = lambda train, val: tf.compat.v1.where(val_mode, x=val, y=train)
   return utils.TensorSpecStruct(
       list(nest.map_structure(select_mode_fn, train_dict, val_dict).items()))
 

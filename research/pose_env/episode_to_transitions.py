@@ -18,7 +18,7 @@
 import gin
 from PIL import Image
 from tensor2robot.utils import image
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 _bytes_feature = (
     lambda v: tf.train.Feature(bytes_list=tf.train.BytesList(value=v)))

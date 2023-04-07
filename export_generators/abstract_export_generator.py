@@ -24,9 +24,9 @@ import gin
 import six
 from tensor2robot.models import abstract_model
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
-from tensorflow.contrib import util as contrib_util
+# from tensorflow.contrib import util as contrib_util
 
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_log_pb2
@@ -125,7 +125,7 @@ class AbstractExportGenerator(six.with_metaclass(abc.ABCMeta, object)):
     flat_feature_spec = tensorspec_utils.flatten_spec_structure(feature_spec)
     tf.io.gfile.makedirs(export_dir)
     request_filename = os.path.join(export_dir, 'tf_serving_warmup_requests')
-    with tf.python_io.TFRecordWriter(request_filename) as writer:
+    with tf.io.TFRecordWriter(request_filename) as writer:
       for batch_size in batch_sizes:
         request = predict_pb2.PredictRequest()
         request.model_spec.name = self._model_name
@@ -134,7 +134,7 @@ class AbstractExportGenerator(six.with_metaclass(abc.ABCMeta, object)):
 
         for key, numpy_spec in numpy_feature_specs.items():
           request.inputs[key].CopyFrom(
-              contrib_util.make_tensor_proto(numpy_spec))
+              tf.make_tensor_proto(numpy_spec))
 
         log = prediction_log_pb2.PredictionLog(
             predict_log=prediction_log_pb2.PredictLog(request=request))

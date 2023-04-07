@@ -31,7 +31,7 @@ from tensor2robot.research.vrgripper import episode_to_transitions
 from tensor2robot.research.vrgripper import vrgripper_env_models
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 TRAIN = tf_estimator.ModeKeys.TRAIN
 PREDICT = tf_estimator.ModeKeys.PREDICT
@@ -269,8 +269,8 @@ class VRGripperEnvTecModel(abstract_model.AbstractT2RModel):
     fc_embedding = tf.tile(
         condition_embedding[Ellipsis, :self._fc_embed_size][:, :, None, :],
         [1, 1, self._episode_length, 1])
-    with tf.variable_scope(
-        'state_features', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope(
+        'state_features', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       state_features, _ = meta_tfdata.multi_batch_apply(
           vision_layers.BuildImagesToFeaturesModel, 3,
           features.inference.features.image,
@@ -285,7 +285,7 @@ class VRGripperEnvTecModel(abstract_model.AbstractT2RModel):
     # We only predict end token for next step.
     if self._predict_end_weight > 0:
       aux_output_dim = 1
-    with tf.variable_scope('a_func', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope('a_func', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       action_params, end_token = meta_tfdata.multi_batch_apply(
           vision_layers.BuildImageFeaturesToPoseModel,
           3, fc_inputs, num_outputs=None, aux_output_dim=aux_output_dim)
@@ -322,7 +322,7 @@ class VRGripperEnvTecModel(abstract_model.AbstractT2RModel):
       one_labels = tf.ones_like(
           inference_outputs['end_token_logits'])[:, :, -2:, :]
       end_labels = tf.concat([zero_labels, one_labels], 2)
-      end_loss = tf.losses.sigmoid_cross_entropy(
+      end_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
           multi_class_labels=end_labels,
           logits=inference_outputs['end_token_logits'])
     return end_loss
@@ -362,7 +362,7 @@ class VRGripperEnvTecModel(abstract_model.AbstractT2RModel):
     if self.use_summaries(params) and train_outputs is not None:
       eval_outputs = {}
       for key, value in train_outputs.items():
-        eval_outputs[key] = tf.metrics.mean(value)
+        eval_outputs[key] = tf.compat.v1.metrics.mean(value)
       return eval_outputs
 
   def add_summaries(self,
@@ -378,16 +378,16 @@ class VRGripperEnvTecModel(abstract_model.AbstractT2RModel):
       return
     if mode != PREDICT:
       for key in ['bc_loss', 'embed_loss']:
-        tf.summary.scalar(key, train_outputs[key])
+        tf.compat.v1.summary.scalar(key, train_outputs[key])
       if self._predict_end_weight > 0:
-        tf.summary.scalar('end_loss', train_outputs['end_loss'])
+        tf.compat.v1.summary.scalar('end_loss', train_outputs['end_loss'])
     # Marginal distribution (over batch, timesteps) over each action dim.
     pose = inference_outputs['inference_output']
     for i, key in enumerate(
         ['x', 'y', 'z', 'rx', 'ry', 'rz', 'gripper_close']):
-      tf.summary.histogram('estimated_pose/%s' % key, pose[Ellipsis, i])
+      tf.compat.v1.summary.histogram('estimated_pose/%s' % key, pose[Ellipsis, i])
     if self._predict_end_weight > 0:
-      tf.summary.histogram('estimated_pose/end_weight', pose[Ellipsis, -1])
+      tf.compat.v1.summary.histogram('estimated_pose/end_weight', pose[Ellipsis, -1])
 
   def pack_features(
       self, state, prev_episode_data, timestep

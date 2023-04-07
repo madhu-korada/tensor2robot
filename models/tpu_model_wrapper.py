@@ -26,9 +26,9 @@ from tensor2robot.models import model_interface
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.preprocessors import tpu_preprocessor_wrapper
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
-from tensorflow.contrib import tpu as contrib_tpu
+# from tensorflow.contrib import tpu as contrib_tpu
 
 FLAGS = flags.FLAGS
 TRAIN = tf_estimator.ModeKeys.TRAIN
@@ -46,7 +46,7 @@ ExportOutputType = abstract_model.ExportOutputType
 def get_cross_shard_optimizer(optimizer, disable_for_cpu_debugging=False):
   if disable_for_cpu_debugging:
     return optimizer
-  return contrib_tpu.CrossShardOptimizer(optimizer)
+  return tf.compat.v1.tpu.CrossShardOptimizer(optimizer)
 
 
 @gin.configurable
@@ -183,7 +183,7 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
         labels = tensorspec_utils.cast_bfloat16_to_float32(labels)
 
     if self._train_in_bfloat16 and mode == tf_estimator.ModeKeys.TRAIN:
-      with contrib_tpu.bfloat16_scope():
+      with tf.compat.v1.tpu.bfloat16_scope():
         inference_outputs = self._t2r_model.inference_network_fn(
             features, labels, mode, config, params)
     else:
@@ -207,15 +207,14 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
         if len(model_fn_results) == 1:
           name, output = list(model_fn_results.items())[0]
           export_outputs[name] = tf_estimator.export.RegressionOutput(output)
-        export_outputs[tf.saved_model.signature_constants
-                       .DEFAULT_SERVING_SIGNATURE_DEF_KEY] = (
+        export_outputs[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY] = (
                            tf_estimator.export.PredictOutput(model_fn_results))
         predictions = model_fn_results
       else:
         raise ValueError('The create_export_outputs_fn should return a '
                          'tuple(predictions, export_outputs) or predictions.')
 
-      return contrib_tpu.TPUEstimatorSpec(
+      return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
           mode=mode, predictions=predictions, export_outputs=export_outputs)
 
     train_fn_result = self._t2r_model.model_train_fn(features, labels,
@@ -263,7 +262,7 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
         # in the graph collection. The scaffold function might register a
         # saver already which is why it is checked here and a saver only
         # added it has none has been added.
-        if not tf.get_collection(tf.GraphKeys.SAVERS):
+        if not tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SAVERS):
           # TODO(T2R_CONTRIBUTORS): Switch to using gin config for all saver params.
           keep_checkpoint_every_n_hours = None
           max_to_keep = None
@@ -274,7 +273,7 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
               keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
               max_to_keep=max_to_keep,
           )
-          tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
+          tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.SAVERS, saver)
         return scaffold
 
       training_hooks = []
@@ -286,7 +285,7 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
             gin_utils.GinConfigSaverHook(
                 config.model_dir, summarize_config=True))
 
-      return contrib_tpu.TPUEstimatorSpec(
+      return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=train_loss,
           train_op=train_op,
@@ -313,7 +312,7 @@ class TPUT2RModelWrapper(model_interface.ModelInterface):
                 os.path.join(config.model_dir, eval_name),
                 summarize_config=True))
 
-      return contrib_tpu.TPUEstimatorSpec(
+      return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=train_loss,
           eval_metrics=eval_metrics,

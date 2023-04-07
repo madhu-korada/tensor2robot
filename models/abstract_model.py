@@ -30,18 +30,19 @@ from tensor2robot.models import optimizers
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
-from tensorflow.contrib import framework as contrib_framework
-from tensorflow.contrib import tpu as contrib_tpu
-from tensorflow.contrib import training as contrib_training
+import tf_slim as slim
+# from tensorflow.contrib import framework as contrib_framework
+# from tensorflow.contrib import tpu as contrib_tpu
+# from tensorflow.contrib import training as contrib_training
 
 FLAGS = flags.FLAGS
 TRAIN = tf_estimator.ModeKeys.TRAIN
 EVAL = tf_estimator.ModeKeys.EVAL
 PREDICT = tf_estimator.ModeKeys.PREDICT
 
-RunConfigType = Optional[Union[tf_estimator.RunConfig, contrib_tpu.RunConfig]]
+RunConfigType = Optional[Union[tf_estimator.RunConfig, tf.compat.v1.estimator.tpu.RunConfig]]
 ParamsType = Optional[Dict[Text, Any]]
 
 DictOrSpec = Union[Dict[Text, tf.Tensor], tensorspec_utils.TensorSpecStruct]
@@ -69,16 +70,16 @@ gin_configurable_run_config_cls = gin.external_configurable(
     denylist=['model_dir'])
 
 gin_configurable_tpu_run_config_cls = gin.external_configurable(
-    contrib_tpu.RunConfig,
+    tf.compat.v1.estimator.tpu.RunConfig,
     name='tf.contrib.tpu.RunConfig',
     denylist=['model_dir', 'tpu_config'])
 
 gin_configurable_tpu_config_cls = gin.external_configurable(
-    contrib_tpu.TPUConfig, name='tf.contrib.tpu.TPUConfig')
+    tf.compat.v1.estimator.tpu.TPUConfig, name='tf.contrib.tpu.TPUConfig')
 
 # Expose the tf.train.Saver to gin.
 gin_configurable_saver = gin.external_configurable(
-    tf.train.Saver,
+    tf.compat.v1.train.Saver,
     name='tf.train.Saver',
     allowlist=['save_relative_paths', 'var_list', 'allow_empty'])
 
@@ -108,7 +109,8 @@ def default_init_from_checkpoint_fn(
   """
   logging.info('Initializing model weights from %s', checkpoint)
   reader = tf.train.load_checkpoint(checkpoint)
-  variables_to_restore = contrib_framework.get_variables()
+  # variables_to_restore = contrib_framework.get_variables()
+  variables_to_restore = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)
   assignment_map = {}
   for v in variables_to_restore:
     if filter_restorables_fn is not None and not filter_restorables_fn(v):
@@ -123,7 +125,7 @@ def default_init_from_checkpoint_fn(
     else:
       raise ValueError('Attempting to restore variable {} which is '
                        'not in the checkpoint.'.format(op_name))
-  tf.train.init_from_checkpoint(checkpoint, assignment_map)
+  tf.compat.v1.train.init_from_checkpoint(checkpoint, assignment_map)
 
 
 class V2SummaryInitHook(tf_estimator.SessionRunHook):
@@ -215,7 +217,7 @@ class AbstractT2RModel(
     self._use_avg_model_params = use_avg_model_params
     self._init_from_checkpoint_fn = init_from_checkpoint_fn
     self._optimizer = None  # type: Optional[tf.train.Optimizer]
-    self._scaffold_fn = tf.train.Scaffold
+    self._scaffold_fn = tf.compat.v1.train.Scaffold
 
   def create_pack_features(
       self, feature_spec,
@@ -287,13 +289,13 @@ class AbstractT2RModel(
     """Get eval_hooks to be passed to estimator spec."""
     logging.warning('This function is deprecated and will be replaced.')
     hooks = []
-    summary_op = tf.summary.merge_all()
+    summary_op = tf.compat.v1.summary.merge_all()
     if summary_op is not None:
       eval_name = 'eval'
       if params is not None:
         eval_name = params.get('eval_name', eval_name)
       hooks = [
-          tf.train.SummarySaverHook(
+          tf.estimator.SummarySaverHook(
               output_dir=os.path.join(config.model_dir, eval_name),
               save_steps=config.save_summary_steps,
               summary_op=summary_op),
@@ -368,11 +370,11 @@ class AbstractT2RModel(
     if filter_trainables_fn is not None:
       logging.info('Filtering trainable variables')
       variables_to_train = [
-          var for var in tf.trainable_variables() if filter_trainables_fn(var)]
+          var for var in tf.compat.v1.trainable_variables() if filter_trainables_fn(var)]
       logging.info('Only updating the following trainables:')
       for var in variables_to_train:
         logging.info('  %s', var.name)
-    return contrib_training.create_train_op(
+    return slim.learning.create_train_op(
         loss,
         optimizer,
         summarize_gradients=summarize_gradients,
@@ -724,8 +726,7 @@ class AbstractT2RModel(
         if len(model_fn_results) == 1:
           name, output = list(model_fn_results.items())[0]
           export_outputs[name] = tf_estimator.export.RegressionOutput(output)
-        export_outputs[tf.saved_model.signature_constants
-                       .DEFAULT_SERVING_SIGNATURE_DEF_KEY] = (
+        export_outputs[tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY] = (
                            tf_estimator.export.PredictOutput(model_fn_results))
         predictions = model_fn_results
       else:
@@ -790,7 +791,7 @@ class AbstractT2RModel(
       # in the graph collection. The scaffold function might register a
       # saver already which is why it is checked here and a saver only
       # added it has none has been added.
-      if not tf.get_collection(tf.GraphKeys.SAVERS):
+      if not tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SAVERS):
         # TODO(T2R_CONTRIBUTORS): Switch to using gin config for all saver params.
         keep_checkpoint_every_n_hours = None
         max_to_keep = None
@@ -801,7 +802,7 @@ class AbstractT2RModel(
             keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
             max_to_keep=max_to_keep,
         )
-        tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
+        tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.SAVERS, saver)
       return tf_estimator.EstimatorSpec(
           mode=mode,
           loss=train_loss,
@@ -857,13 +858,13 @@ class AbstractT2RModel(
 
       def create_swapping_saver_scaffold(saver=None):
         saver = optimizers.create_swapping_saver(optimizer)
-        tf.add_to_collection(tf.GraphKeys.SAVERS, saver)
-        return tf.train.Scaffold(saver=saver)
+        tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.SAVERS, saver)
+        return tf.compat.v1.train.Scaffold(saver=saver)
 
       self._scaffold_fn = create_swapping_saver_scaffold
     if (self._use_sync_replicas_optimizer and (not self.is_device_tpu) and
         config is not None and config.num_worker_replicas > 1):
-      optimizer = tf.train.SyncReplicasOptimizer(
+      optimizer = tf.compat.v1.train.SyncReplicasOptimizer(
           optimizer,
           replicas_to_aggregate=config.num_worker_replicas - 1,
           total_num_replicas=config.num_worker_replicas)

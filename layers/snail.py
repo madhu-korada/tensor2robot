@@ -22,7 +22,7 @@ from typing import Text
 
 import numpy as np
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import layers
 
 
@@ -39,7 +39,7 @@ def CausalConv(x, dilation_rate, filters, kernel_size=2, scope = ""):
   Returns:
     y: Tensor of shape (batch_size, new_steps, D).
   """
-  with tf.variable_scope(scope):
+  with tf.compat.v1.variable_scope(scope):
     causal_pad_size = (kernel_size - 1) * dilation_rate
     # Pad sequence dimension.
     x = tf.pad(x, [[0, 0], [causal_pad_size, 0], [0, 0]])
@@ -62,7 +62,7 @@ def DenseBlock(x, dilation_rate, filters, scope = ""):
   Returns:
     y: Tensor of shape [batch, time, channels + filters].
   """
-  with tf.variable_scope(scope):
+  with tf.compat.v1.variable_scope(scope):
     xf = CausalConv(x, dilation_rate, filters, scope="xf")
     xg = CausalConv(x, dilation_rate, filters, scope="xg")
     activations = tf.nn.tanh(xf) * tf.nn.sigmoid(xg)
@@ -80,7 +80,7 @@ def TCBlock(x, sequence_length, filters, scope = ""):
   Returns:
     y: Tensor of shape [batch, sequence_length, channels + filters].
   """
-  with tf.variable_scope(scope):
+  with tf.compat.v1.variable_scope(scope):
     for i in range(1, int(np.ceil(np.log2(sequence_length)))+1):
       x = DenseBlock(x, 2**i, filters, scope="DenseBlock_%d" % i)
     return x
@@ -133,7 +133,7 @@ def AttentionBlock(x, key_size, value_size, scope = ""):
     end_points: Dictionary of intermediate values (e.g. debugging).
   """
   end_points = {}
-  with tf.variable_scope(scope):
+  with tf.compat.v1.variable_scope(scope):
     key = layers.fully_connected(x, key_size, activation_fn=None)  # [T, K]
     query = layers.fully_connected(x, key_size, activation_fn=None)  # [T, K]
     logits = tf.matmul(query, key, transpose_b=True)  # [T, T]

@@ -20,7 +20,7 @@ TODO(T2R_CONTRIBUTORS) - re-base class using tf.python_io.TFRecordWriter.
 
 import os
 import gin
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 @gin.configurable
@@ -35,10 +35,10 @@ class TFRecordReplayWriter(object):
       raise ValueError('Writer is already open!')
 
     path_dirname = os.path.dirname(path)
-    if not tf.gfile.IsDirectory(path_dirname):
-      tf.gfile.MakeDirs(path_dirname)
+    if not tf.io.gfile.isdir(path_dirname):
+      tf.io.gfile.makedirs(path_dirname)
 
-    self.writer = tf.python_io.TFRecordWriter(path + '.tfrecord')
+    self.writer = tf.io.TFRecordWriter(path + '.tfrecord')
 
   def close(self):
     if self.writer is None:

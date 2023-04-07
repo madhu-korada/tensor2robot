@@ -20,7 +20,7 @@ import numpy as np
 from tensor2robot.export_generators import default_export_generator
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.utils import mocks
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 from tensorflow.contrib import predictor as contrib_predictor
 from tensorflow.contrib import tpu as contrib_tpu
@@ -38,10 +38,10 @@ class DefaultExportGeneratorTest(tf.test.TestCase, parameterized.TestCase):
         multi_dataset=multi_dataset)
 
     # We create a tpu estimator for potential training.
-    estimator = contrib_tpu.TPUEstimator(
+    estimator = tf.compat.v1.estimator.tpu.TPUEstimator(
         model_fn=mock_t2r_model.model_fn,
         use_tpu=mock_t2r_model.is_device_tpu,
-        config=contrib_tpu.RunConfig(model_dir=model_dir),
+        config=tf.compat.v1.estimator.tpu.RunConfig(model_dir=model_dir),
         train_batch_size=BATCH_SIZE,
         eval_batch_size=BATCH_SIZE)
 

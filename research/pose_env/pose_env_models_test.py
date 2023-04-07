@@ -29,7 +29,7 @@ from tensor2robot.research.pose_env import pose_env_maml_models
 from tensor2robot.research.pose_env import pose_env_models
 from tensor2robot.utils import train_eval
 from tensor2robot.utils import train_eval_test_utils
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 
 BATCH_SIZE = 1
@@ -39,7 +39,7 @@ EVAL_STEPS = 1
 NUM_TRAIN_SAMPLES_PER_TASK = 1
 NUM_VAL_SAMPLES_PER_TASK = 1
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 
 class PoseEnvModelsTest(parameterized.TestCase):

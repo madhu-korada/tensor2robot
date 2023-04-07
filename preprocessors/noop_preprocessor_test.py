@@ -22,7 +22,7 @@ from absl.testing import parameterized
 import numpy as np
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 MockFeatures = collections.namedtuple(
@@ -101,7 +101,7 @@ class NoOpPreprocessorTest(parameterized.TestCase, tf.test.TestCase):
   def test_noop_preprocessor_preprocess_fn(self):
 
     def preprocess(preprocessor, feature_spec, label_spec, flatten=False):
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         feature_placeholders = tensorspec_utils.make_placeholders(
             feature_spec, batch_size=1)
         label_placeholders = None

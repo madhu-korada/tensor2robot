@@ -33,10 +33,10 @@ from tensor2robot.models import tpu_model_wrapper
 from tensor2robot.proto import t2r_pb2
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
-from tensorflow.contrib import tpu as contrib_tpu
-from tensorflow.contrib import training as contrib_training
+# from tensorflow.contrib import tpu as contrib_tpu
+# from tensorflow.contrib import training as contrib_training
 
 ExporterFn = Callable[[
     model_interface.ModelInterface, abstract_export_generator
@@ -116,9 +116,9 @@ def provide_input_generator_with_model_information(
     input_generator_instance: The prepared instance which was passed in.
       Note it is not a copy but an in-place operation.
   """
-  tf.logging.info('!' * 80)
-  tf.logging.info('guzzler_use_compression %s', str(guzzler_use_compression))
-  tf.logging.info('!' * 80)
+  tf.compat.v1.logging.info('!' * 80)
+  # tf.compat.v1.logging.info('guzzler_use_compression %s', str(guzzler_use_compression))
+  tf.compat.v1.logging.info('!' * 80)
   if not isinstance(input_generator_instance,
                     abstract_input_generator.AbstractInputGenerator):
     raise ValueError('The input generator must be a subclass of '
@@ -162,7 +162,7 @@ def create_tpu_estimator(t2r_model,
     An instance of contrib_tpu.TPUEstimator.
   """
   del kwargs
-  return contrib_tpu.TPUEstimator(
+  return tf.compat.v1.estimator.tpu.TPUEstimator(
       model_fn=t2r_model.model_fn,
       model_dir=model_dir,
       config=t2r_model.get_tpu_run_config(),
@@ -584,7 +584,7 @@ def train_eval_model(
 
     # This will start with the latest checkpoint and wait afterwards for a new
     # checkpoint for the next evaluation.
-    for checkpoint_path in contrib_training.checkpoints_iterator(
+    for checkpoint_path in tf.train.checkpoints_iterator(
         estimator.model_dir):
       backup_checkpoint_path = create_backup_checkpoint_for_eval(
           checkpoint_path)

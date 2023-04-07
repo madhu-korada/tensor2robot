@@ -30,7 +30,7 @@ from tensor2robot.utils import mocks
 from tensor2robot.utils import tensorspec_utils
 from tensor2robot.utils import tfdata
 from tensor2robot.utils import train_eval
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 from tensorflow.contrib import predictor as contrib_predictor
 FLAGS = flags.FLAGS
@@ -195,7 +195,7 @@ class MockMetaExportGenerator(mocks.MockExportGenerator):
       # We only assume one input, a string which containes the serialized proto.
       receiver_tensors = {
           'input_example_tensor':
-              tf.placeholder(
+              tf.compat.v1.placeholder(
                   dtype=tf.string, shape=[None], name='input_example_tensor')
       }
       # We have to filter our specs since only required tensors are

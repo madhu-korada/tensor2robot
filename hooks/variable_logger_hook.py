@@ -20,11 +20,11 @@ from typing import Optional
 from absl import logging
 
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import framework as contrib_framework
 
 
-class VariableLoggerHook(tf.train.SessionRunHook):
+class VariableLoggerHook(tf.estimator.SessionRunHook):
   """A hook to log variables via a session run hook."""
 
   def __init__(self, max_num_variable_values = None):
@@ -39,11 +39,12 @@ class VariableLoggerHook(tf.train.SessionRunHook):
 
   def begin(self):
     """Captures all variables to be read out during the session run."""
-    self._variables_to_log = contrib_framework.get_variables()
+    # self._variables_to_log = contrib_framework.get_variables()
+    self._variables_to_log = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)
 
   def before_run(self, run_context):
     """Adds the variables to the run args."""
-    return tf.train.SessionRunArgs(self._variables_to_log)
+    return tf.estimator.SessionRunArgs(self._variables_to_log)
 
   def after_run(self, run_context, run_values):
     del run_context

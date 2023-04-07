@@ -18,7 +18,7 @@
 from absl.testing import parameterized
 import numpy as np
 from tensor2robot.research.qtopt import pcgrad
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class PcgradTest(tf.test.TestCase, parameterized.TestCase):
@@ -36,7 +36,7 @@ class PcgradTest(tf.test.TestCase, parameterized.TestCase):
                       denylist,
                       allowlist,
                       pcgrad_var_idx):
-    tf.disable_eager_execution()
+    tf.compat.v1.disable_eager_execution()
     for dtype in [tf.dtypes.float32, tf.dtypes.float64]:
       with self.session(graph=tf.Graph()):
         var0_np = np.array([1.0, 2.0], dtype=dtype.as_numpy_dtype)
@@ -54,24 +54,24 @@ class PcgradTest(tf.test.TestCase, parameterized.TestCase):
         loss1 = tf.tensordot(var0, const1, 1) + tf.tensordot(var1, const0, 1)
 
         learning_rate = lambda: 0.001
-        opt = tf.train.GradientDescentOptimizer(learning_rate)
+        opt = tf.compat.v1.train.GradientDescentOptimizer(learning_rate)
         losses = loss0 + loss1
         opt_grads = opt.compute_gradients(losses, var_list=[var0, var1])
 
         pcgrad_opt = pcgrad.PCGrad(
-            tf.train.GradientDescentOptimizer(learning_rate),
+            tf.compat.v1.train.GradientDescentOptimizer(learning_rate),
             denylist=denylist,
             allowlist=allowlist)
         pcgrad_col_opt = pcgrad.PCGrad(
-            tf.train.GradientDescentOptimizer(learning_rate),
+            tf.compat.v1.train.GradientDescentOptimizer(learning_rate),
             use_collection_losses=True,
             denylist=denylist,
             allowlist=allowlist)
         losses = [loss0, loss1]
         pcgrad_grads = pcgrad_opt.compute_gradients(
             losses, var_list=[var0, var1])
-        tf.add_to_collection(pcgrad.PCGRAD_LOSSES_COLLECTION, loss0)
-        tf.add_to_collection(pcgrad.PCGRAD_LOSSES_COLLECTION, loss1)
+        tf.compat.v1.add_to_collection(pcgrad.PCGRAD_LOSSES_COLLECTION, loss0)
+        tf.compat.v1.add_to_collection(pcgrad.PCGRAD_LOSSES_COLLECTION, loss1)
         pcgrad_grads_collection = pcgrad_col_opt.compute_gradients(
             None, var_list=[var0, var1])
 
@@ -79,7 +79,7 @@ class PcgradTest(tf.test.TestCase, parameterized.TestCase):
           # Shouldn't return non-slot variables from other graphs.
           self.assertEmpty(opt.variables())
 
-        self.evaluate(tf.global_variables_initializer())
+        self.evaluate(tf.compat.v1.global_variables_initializer())
         grad_vec, pcgrad_vec, pcgrad_col_vec = self.evaluate(
             [opt_grads, pcgrad_grads, pcgrad_grads_collection])
         # Make sure that both methods take grads of the same vars.

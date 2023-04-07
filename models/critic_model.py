@@ -23,7 +23,7 @@ import gin
 import six
 from tensor2robot.models import abstract_model
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS
@@ -45,7 +45,7 @@ class CriticModel(abstract_model.AbstractT2RModel):
 
   def __init__(
       self,
-      loss_function = tf.losses.mean_squared_error,
+      loss_function = tf.compat.v1.losses.mean_squared_error,
       action_batch_size = None,
       **kwargs):
     """Constructor for ContinuousMCModel.
@@ -142,7 +142,7 @@ class CriticModel(abstract_model.AbstractT2RModel):
              mode,
              config = None,
              params = None,
-             reuse=tf.AUTO_REUSE):
+             reuse=tf.compat.v1.AUTO_REUSE):
     """Q(state, action) value function.
 
     We only need to define the q_func and loss_fn to have a proper model.
@@ -207,7 +207,7 @@ class CriticModel(abstract_model.AbstractT2RModel):
         scope='q_func',
         config=config,
         params=params,
-        reuse=tf.AUTO_REUSE)
+        reuse=tf.compat.v1.AUTO_REUSE)
     if isinstance(outputs, tuple):
       update_ops = outputs[1]
       outputs = outputs[0]
@@ -222,7 +222,7 @@ class CriticModel(abstract_model.AbstractT2RModel):
                        'outputs but is not in {}.'.format(list(outputs.keys())))
 
     if self.use_summaries(params):
-      tf.summary.histogram('q_t_predicted', outputs['q_predicted'])
+      tf.compat.v1.summary.histogram('q_t_predicted', outputs['q_predicted'])
     return outputs, update_ops
 
   def model_train_fn(self,

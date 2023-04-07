@@ -21,10 +21,10 @@ import os
 import six
 from tensor2robot.input_generators import default_input_generator
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 BATCH_SIZE = 2
 NUM_BATCHES = 3
@@ -56,8 +56,8 @@ class DefaultInputGeneratorTest(tf.test.TestCase):
     input_generator.set_feature_specifications(feature_spec, feature_spec)
     input_generator.set_label_specifications(label_spec, label_spec)
 
-    np_features, np_labels = input_generator.create_dataset_input_fn(
-        mode=tf_estimator.ModeKeys.TRAIN)().make_one_shot_iterator().get_next()
+    np_features, np_labels = tf.compat.v1.data.make_one_shot_iterator(input_generator.create_dataset_input_fn(
+        mode=tf_estimator.ModeKeys.TRAIN)()).get_next()
 
     np_features = tensorspec_utils.validate_and_pack(
         feature_spec, np_features, ignore_batch=True)
@@ -86,8 +86,8 @@ class DefaultInputGeneratorTest(tf.test.TestCase):
     input_generator.set_feature_specifications(feature_spec, feature_spec)
     input_generator.set_label_specifications(label_spec, label_spec)
 
-    np_features, np_labels = input_generator.create_dataset_input_fn(
-        mode=tf_estimator.ModeKeys.TRAIN)().make_one_shot_iterator().get_next()
+    np_features, np_labels = tf.compat.v1.data.make_one_shot_iterator(input_generator.create_dataset_input_fn(
+        mode=tf_estimator.ModeKeys.TRAIN)()).get_next()
 
     np_features = tensorspec_utils.validate_and_pack(
         feature_spec, np_features, ignore_batch=True)

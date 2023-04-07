@@ -24,7 +24,7 @@ from six.moves import range
 import sonnet as snt
 from tensor2robot.layers import snail
 from tensor2robot.layers import vision_layers
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import layers
 
 
@@ -69,8 +69,8 @@ def ConvLSTM(image,
   del condition_sequence_length, inference_sequence_length
   conv_torso_fn = functools.partial(conv_torso_fn, is_training=is_training)
   feature_points, end_points = snt.BatchApply(conv_torso_fn)(image, aux_input)
-  lstm_cell = tf.nn.rnn_cell.GRUCell(num_units=lstm_num_units)
-  lstm_outputs, _ = tf.nn.dynamic_rnn(
+  lstm_cell = tf.compat.v1.nn.rnn_cell.GRUCell(num_units=lstm_num_units)
+  lstm_outputs, _ = tf.compat.v1.nn.dynamic_rnn(
       lstm_cell, feature_points, dtype=tf.float32)
   head_fn = functools.partial(LinearHead, output_size=output_size)
   estimated_pose = snt.BatchApply(head_fn)(lstm_outputs)
@@ -89,7 +89,7 @@ def SNAIL(image,
           condition_sequence_length=20,
           inference_sequence_length=20):
   """SNAIL sequence encoder described in https://arxiv.org/abs/1707.03141."""
-  with tf.variable_scope("snail"):
+  with tf.compat.v1.variable_scope("snail"):
     conv_torso_fn = functools.partial(conv_torso_fn, is_training=is_training)
     feature_points, end_points = snt.BatchApply(conv_torso_fn)(image, aux_input)
     sequence_length = condition_sequence_length + inference_sequence_length
@@ -130,9 +130,9 @@ def MultiHeadMLP(net,
   # Predict remaining waypoints with a separate model and block gradients
   # from flowing back to `net`.
   if num_waypoints > 1 and stop_gradient_future_waypoints:
-    with tf.variable_scope("action_trajectory", reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope("action_trajectory", reuse=tf.compat.v1.AUTO_REUSE):
       components_1 = MLPFn(net, 1)
-    with tf.variable_scope("auxiliary_trajectory", reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope("auxiliary_trajectory", reuse=tf.compat.v1.AUTO_REUSE):
       if is_training:
         # We only stop gradient during training, so we can still compute
         # saliencies using the eval graph.

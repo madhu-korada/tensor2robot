@@ -19,7 +19,7 @@ from absl import flags
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.preprocessors import tpu_preprocessor_wrapper
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS

@@ -22,7 +22,7 @@ from absl.testing import parameterized
 import gin
 from tensor2robot.research.bcz import model
 from tensor2robot.utils.t2r_test_fixture import T2RModelFixture
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS

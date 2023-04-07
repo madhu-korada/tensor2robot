@@ -26,9 +26,9 @@ from tensor2robot.models import abstract_model
 from tensor2robot.predictors import abstract_predictor
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
-from tensorflow.contrib import framework as contrib_framework
+# from tensorflow.contrib import framework as contrib_framework
 
 _BUSY_WAITING_SLEEP_TIME_IN_SECS = 1
 
@@ -85,21 +85,22 @@ class CheckpointPredictor(abstract_predictor.AbstractPredictor):
           features=self._features, labels=None, mode=mode)
       estimator_spec = t2r_model.model_fn(preprocessed_features, None, mode)
       self._predictions = estimator_spec.predictions
-      config = tf.ConfigProto(
+      config = tf.compat.v1.ConfigProto(
           device_count={'GPU': 1 if use_gpu else 0},
           intra_op_parallelism_threads=tf_intra_op_parallelism_threads,
           inter_op_parallelism_threads=tf_inter_op_parallelism_threads)
-      self._sess = tf.Session(graph=g, config=config)
+      self._sess = tf.compat.v1.Session(graph=g, config=config)
       self._t2r_model = t2r_model
       # The location of the last checkpoint loaded.
       self._current_checkpoint_path = None
-      self._tf_global_step = tf.train.get_or_create_global_step()
+      self._tf_global_step = tf.compat.v1.train.get_or_create_global_step()
       # The PREDICT graph is generated which contains only the model specific
       # variables and not training specific variables, e.g. Adam, Momentum.
-      var_list = contrib_framework.get_variables()
-      self._saver = tf.train.Saver(var_list=var_list)
+      # var_list = contrib_framework.get_variables()
+      var_list = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)
+      self._saver = tf.compat.v1.train.Saver(var_list=var_list)
       # Default init op in case init_randomly is called.
-      self._global_init_op = tf.global_variables_initializer()
+      self._global_init_op = tf.compat.v1.global_variables_initializer()
 
     self._model_was_restored = False
 
@@ -184,7 +185,7 @@ class CheckpointPredictor(abstract_predictor.AbstractPredictor):
   def close(self):
     """Closes all open handles used throughout model evaluation."""
     self._sess.close()
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     self._model_was_restored = False
 
   def assert_is_loaded(self):

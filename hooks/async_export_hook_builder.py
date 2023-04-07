@@ -28,7 +28,7 @@ from tensor2robot.models import model_interface
 from tensor2robot.proto import t2r_pb2
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 from tensorflow.contrib import tpu as contrib_tpu
 

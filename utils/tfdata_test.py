@@ -24,9 +24,9 @@ from six.moves import range
 from tensor2robot.utils import image
 from tensor2robot.utils import tensorspec_utils
 from tensor2robot.utils import tfdata
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 PoseEnvFeature = collections.namedtuple(
     'PoseEnvFeature', ['state', 'action'])
@@ -77,7 +77,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     batched_dataset = dataset.batch(batch_size=1)
     dataset = tfdata.serialized_to_parsed(batched_dataset, feature_tspec,
                                           label_tspec)
-    iterator = dataset.make_one_shot_iterator()
+    iterator = tf.compat.v1.data.make_one_shot_iterator(dataset)
     features, labels = iterator.get_next()
     tensorspec_utils.assert_equal(feature_tspec, features, ignore_batch=True)
     tensorspec_utils.assert_equal(label_tspec, labels, ignore_batch=True)
@@ -89,7 +89,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
 
   def _write_test_images_examples(self, batch_of_list_of_encoded_images,
                                   file_path):
-    with tf.python_io.TFRecordWriter(file_path) as writer:
+    with tf.io.TFRecordWriter(file_path) as writer:
       for list_of_encoded_images in batch_of_list_of_encoded_images:
         example = tf.train.Example()
         for encoded_image in list_of_encoded_images:
@@ -117,7 +117,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     dataset = tfdata.parallel_read(file_patterns=file_pattern)
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = tfdata.serialized_to_parsed(dataset, feature_spec, label_spec)
-    features, _ = dataset.make_one_shot_iterator().get_next()
+    features, _ = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual((batch_size,) + feature_spec.state.shape,
                         features.state.get_shape().as_list())
@@ -130,7 +130,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     dataset = dataset.map(
         tfdata.create_compress_fn(feature_spec, label_spec, quality=100))
     dataset = dataset.map(tfdata.create_decompress_fn(feature_spec, label_spec))
-    features, _ = dataset.make_one_shot_iterator().get_next()
+    features, _ = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual((batch_size,) + feature_spec.state.shape,
                         features.state.get_shape().as_list())
@@ -169,7 +169,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
         dataset = tfdata.serialized_to_parsed(dataset, feature_spec, None)
     else:
       dataset = tfdata.serialized_to_parsed(dataset, feature_spec, None)
-    features = dataset.make_one_shot_iterator().get_next()
+    features = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual(
         [1, image_height, image_width, 1],
@@ -213,11 +213,11 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
       f = example.feature_lists.feature_list[image_seq_key].feature.add()
       img = TEST_IMAGE * i
       f.bytes_list.value.append(image.numpy_to_image_string(img, 'jpeg'))
-    with tf.python_io.TFRecordWriter(tfrecord_path) as writer:
+    with tf.io.TFRecordWriter(tfrecord_path) as writer:
       writer.write(example.SerializeToString())
 
   def _write_test_varlen_examples(self, data_of_lists, file_path):
-    with tf.python_io.TFRecordWriter(file_path) as writer:
+    with tf.io.TFRecordWriter(file_path) as writer:
       for data in data_of_lists:
         example = tf.train.Example()
         example.features.feature['varlen'].int64_list.value.extend(data)
@@ -238,7 +238,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     dataset = tfdata.parallel_read(file_patterns=file_pattern)
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = tfdata.serialized_to_parsed(dataset, feature_spec, None)
-    features = dataset.make_one_shot_iterator().get_next()
+    features = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual([None, 3], features.varlen.get_shape().as_list())
     with self.session() as session:
@@ -250,7 +250,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
 
   def _write_test_varlen_images_examples(self, batch_of_list_of_encoded_images,
                                          file_path):
-    with tf.python_io.TFRecordWriter(file_path) as writer:
+    with tf.io.TFRecordWriter(file_path) as writer:
       for list_of_encoded_images in batch_of_list_of_encoded_images:
         example = tf.train.Example()
         for encoded_image in list_of_encoded_images:
@@ -284,7 +284,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     dataset = tfdata.parallel_read(file_patterns=file_pattern)
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = tfdata.serialized_to_parsed(dataset, feature_spec, None)
-    features = dataset.make_one_shot_iterator().get_next()
+    features = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual(
         [None, padded_varlen_size, image_height, image_width, 1],
@@ -334,7 +334,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     dataset = tfdata.parallel_read(file_patterns=file_pattern)
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = tfdata.serialized_to_parsed(dataset, feature_spec, None)
-    features = dataset.make_one_shot_iterator().get_next()
+    features = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual(
         [None, padded_varlen_size, image_height, image_width, 1],
@@ -368,7 +368,7 @@ class TFDataTest(parameterized.TestCase, tf.test.TestCase):
     label_tspec = tensorspec_utils.add_sequence_length_specs(label_tspec)
     dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = tfdata.serialized_to_parsed(dataset, feature_tspec, label_tspec)
-    features, labels = dataset.make_one_shot_iterator().get_next()
+    features, labels = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
     # Check tensor shapes.
     self.assertAllEqual(
         [batch_size, None] + TEST_IMAGE_SHAPE, features.state.shape.as_list())

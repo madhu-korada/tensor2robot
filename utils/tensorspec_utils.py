@@ -25,13 +25,15 @@ import numpy as np
 from six.moves import cPickle
 from six.moves import zip
 from tensor2robot.proto import t2r_pb2
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from google.protobuf import text_format
-from tensorflow.contrib import framework as contrib_framework
+# from tensorflow.contrib import framework as contrib_framework
 
-nest = contrib_framework.nest
-TSPEC = contrib_framework.TensorSpec
+# nest = contrib_framework.nest
+from tensorflow.python.util import nest
+import tensorflow as tf2
+TSPEC = tf2.TensorSpec
 
 EXTRA_ASSETS_DIRECTORY = 'assets.extra'
 T2R_ASSETS_FILENAME = 't2r_assets.pbtxt'
@@ -809,7 +811,7 @@ def make_placeholders(spec_structure, batch_size = None):
       shape = (None,) + shape
     elif batch_size > 0:
       shape = (batch_size,) + shape
-    return tf.placeholder(t.dtype, shape, name=t.name)
+    return tf.compat.v1.placeholder(t.dtype, shape, name=t.name)
   return nest.map_structure(make_placeholder, spec_structure)
 
 
@@ -837,7 +839,7 @@ def make_random_tensors(spec_structure, batch_size = 2):
       shape = (None,) + shape
     elif batch_size > 0:
       shape = (batch_size,) + shape
-    r = tf.random_uniform(shape, maxval=maxval, dtype=dtype)
+    r = tf.random.uniform(shape, maxval=maxval, dtype=dtype)
     return tf.cast(r, t.dtype)
 
   return nest.map_structure(make_random, spec_structure)
@@ -1444,7 +1446,7 @@ def is_flat_spec_or_tensors_structure(spec_or_tensors):
                                                      collections.OrderedDict):
     # We have to check any element of our dict or OrderedDict.
     for value in spec_or_tensors.values():
-      if isinstance(value, contrib_framework.TensorSpec):
+      if isinstance(value, tf2.TensorSpec):
         continue
       if isinstance(value, tf.Tensor):
         continue
@@ -1495,7 +1497,7 @@ def assert_valid_spec_structure(
 
   if isinstance(spec_structure, list) or isinstance(spec_structure, tuple):
     for value in spec_structure:
-      if isinstance(value, contrib_framework.TensorSpec):
+      if isinstance(value, tf2.TensorSpec):
         # We only add non None TensorSpec names. These names have to be unique
         # within all specified TensorSpec names used so far in this
         # spec_structure.
@@ -1572,11 +1574,11 @@ def _get_feature(tensor_spec,
   """Get FixedLenfeature or FixedLenSequenceFeature for a tensor spec."""
   varlen_default_value = getattr(tensor_spec, 'varlen_default_value', None)
   if getattr(tensor_spec, 'is_sequence', False):
-    cls = tf.FixedLenSequenceFeature
+    cls = tf.io.FixedLenSequenceFeature
   elif varlen_default_value is not None:
-    cls = tf.VarLenFeature
+    cls = tf.io.VarLenFeature
   else:
-    cls = tf.FixedLenFeature
+    cls = tf.io.FixedLenFeature
   if decode_images and is_encoded_image_spec(tensor_spec):
     if varlen_default_value is not None:
       # Contains a variable length list of images.
@@ -1701,7 +1703,7 @@ def load_t2r_assets_to_file(filename):
 
 def write_input_spec_to_file(in_feature_spec, in_label_spec, filename):
   """Writes feature and label specifications to file."""
-  with tf.gfile.GFile(filename, 'w') as f:
+  with tf.io.gfile.GFile(filename, 'w') as f:
     cPickle.dump({
         'in_feature_spec': in_feature_spec, 'in_label_spec': in_label_spec}, f)  # pytype: disable=wrong-arg-types
 
@@ -1719,7 +1721,7 @@ def load_input_spec_from_file(filename):
 
 def write_global_step_to_file(global_step, filename):
   """Writes feature and label specifications to file."""
-  with tf.gfile.GFile(filename, 'w') as f:
+  with tf.io.gfile.GFile(filename, 'w') as f:
     cPickle.dump({'global_step': global_step}, f)  # pytype: disable=wrong-arg-types
 
 

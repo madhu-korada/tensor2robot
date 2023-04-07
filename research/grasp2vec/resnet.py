@@ -24,7 +24,7 @@ import six
 from six.moves import range
 from tensor2robot.layers import film_resnet_model as resnet_lib
 from tensor2robot.layers import resnet
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 _BATCH_NORM_DECAY = 0.997
@@ -42,7 +42,7 @@ def batch_norm(inputs, training, data_format):
   """Performs a batch normalization using a standard set of parameters."""
   # We set fused=True for a significant performance boost. See
   # https://www.tensorflow.org/performance/performance_guide#common_fused_ops
-  return tf.layers.batch_normalization(
+  return tf.compat.v1.layers.batch_normalization(
       inputs=inputs, axis=1 if data_format == 'channels_first' else 3,
       momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True,
       scale=True, training=training, fused=True)
@@ -81,10 +81,10 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
   if strides > 1:
     inputs = fixed_padding(inputs, kernel_size, data_format)
 
-  return tf.layers.conv2d(
+  return tf.compat.v1.layers.conv2d(
       inputs=inputs, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-      kernel_initializer=tf.variance_scaling_initializer(),
+      kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
       data_format=data_format)
 
 
@@ -458,7 +458,7 @@ class Model(object):
       A variable scope for the model.
     """
 
-    return tf.variable_scope('resnet_model',
+    return tf.compat.v1.variable_scope('resnet_model',
                              custom_getter=self._custom_dtype_getter)
 
   def __call__(self, inputs, training):
@@ -485,7 +485,7 @@ class Model(object):
       inputs = tf.identity(inputs, 'initial_conv')
 
       if self.first_pool_size:
-        inputs = tf.layers.max_pooling2d(
+        inputs = tf.compat.v1.layers.max_pooling2d(
             inputs=inputs, pool_size=self.first_pool_size,
             strides=self.first_pool_stride, padding='SAME',
             data_format=self.data_format)

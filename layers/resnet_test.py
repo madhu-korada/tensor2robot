@@ -19,14 +19,14 @@ import functools
 from absl.testing import parameterized
 from six.moves import range
 from tensor2robot.layers import resnet
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class ResnetTest(tf.test.TestCase, parameterized.TestCase):
 
   @parameterized.parameters(('',), ('fubar',), ('dummy/scope'))
   def test_intermediate_values(self, scope):
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
       image = tf.zeros((2, 224, 224, 3), dtype=tf.float32)
       end_points = resnet.resnet_model(image,
                                        is_training=True,

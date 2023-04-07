@@ -28,12 +28,14 @@ from tensor2robot.preprocessors import spec_transformation_preprocessor
 from tensor2robot.research.bcz import pose_components_lib
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 from tensorflow_graphics.geometry.transformation import quaternion as quaternion_lib
 import tensorflow_probability as tfp
-from tensorflow.contrib import slim as contrib_slim
+# from tensorflow.contrib import slim as contrib_slim
+# slim = contrib_slim
 
-slim = contrib_slim
+import tf_slim as slim
+
 
 
 tfd = tfp.distributions
@@ -215,7 +217,7 @@ def spatial_softmax_network(features,
     feature_points: Tensor of shape [batch_size, feature_points_size]
       corresponding to state representation.
   """
-  with tf.variable_scope('vision_model', reuse=tf.AUTO_REUSE):
+  with tf.compat.v1.variable_scope('vision_model', reuse=tf.compat.v1.AUTO_REUSE):
     feature_points, _ = vision_layers.BuildImagesToFeaturesModel(
         features.image,
         is_training=is_training,
@@ -256,7 +258,7 @@ def resnet_film_network(features,
   # Add preprocessed image to golden values.
   golden_values_hook_builder.add_golden_tensor(
       features.image, name='preprocessed_image')
-  with tf.variable_scope('vision_model', reuse=tf.AUTO_REUSE):
+  with tf.compat.v1.variable_scope('vision_model', reuse=tf.compat.v1.AUTO_REUSE):
     image = features.image
     if concat_cond_image is not None:
       image = tf.concat([image, concat_cond_image], axis=-1)
@@ -304,7 +306,7 @@ def predict_stop_network(state_embedding,
   Returns:
     Logits tensor of shae [batch_size, (num_waypoints-1)*3]
   """
-  with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE):
+  with tf.compat.v1.variable_scope(scope_name, reuse=tf.compat.v1.AUTO_REUSE):
     net = slim.stack(
         state_embedding, slim.fully_connected, fc_layers,
         activation_fn=tf.nn.relu, normalizer_fn=slim.layer_norm)
@@ -466,7 +468,7 @@ def compute_stop_state_loss(stop_state_labels,
   """Constructs loss for the stop_state_prediction."""
   class_weights = tf.constant(class_weights)
   weights = tf.reduce_sum(stop_state_labels * class_weights, -1)
-  return tf.losses.softmax_cross_entropy(
+  return tf.compat.v1.losses.softmax_cross_entropy(
       stop_state_labels,
       stop_state_predictions,
       weights=weights)
@@ -500,19 +502,19 @@ def training_outputs(features,
   """
   del features
   if loss_name == 'mse':
-    reg_loss_fn = tf.losses.mean_squared_error
+    reg_loss_fn = tf.compat.v1.losses.mean_squared_error
   elif loss_name == 'huber':
-    reg_loss_fn = tf.losses.huber_loss
+    reg_loss_fn = tf.compat.v1.losses.huber_loss
   elif loss_name == 'clipped_huber':
     # Some loss can be initially very large and mess with summaries and grads.
     # Clip the loss.
     def reg_loss_fn(**kwargs):
-      return tf.nn.relu6(tf.losses.huber_loss(**kwargs))
+      return tf.nn.relu6(tf.compat.v1.losses.huber_loss(**kwargs))
   elif loss_name == 'piecewise_scaled_huber':
     # Some loss can be initially very large and mess with summaries and grads.
     # Clipping the loss could cause some gradient issue, Here we scaled the loss
     # if it is larger than a threshold.
-    reg_loss_fn = piecewise_scaled_huber(loss_fn=tf.losses.huber_loss)
+    reg_loss_fn = piecewise_scaled_huber(loss_fn=tf.compat.v1.losses.huber_loss)
   else:
     raise ValueError('invalid loss')
   # Predict stop did worse in bcz, make sure this is set to False.
@@ -541,7 +543,7 @@ def training_outputs(features,
       # Binary predictions trained with log_loss.
       predicted = tf.nn.sigmoid(predicted)
       nonloss_outputs[name + '_predicted'] = predicted
-      loss_fn = tf.losses.log_loss
+      loss_fn = tf.compat.v1.losses.log_loss
     else:
       loss_fn = reg_loss_fn
     # Broadcast stop_token.
@@ -605,15 +607,15 @@ def get_gripper_accuracy_metrics(inference_outputs, features, labels):
   for s, label, predicted in zip(['closing', 'opening'],
                                  [label_is_closing, label_is_opening],
                                  [predicted_is_closing, predicted_is_opening]):
-    metrics[s + '_accuracy'] = tf.metrics.accuracy(
+    metrics[s + '_accuracy'] = tf.compat.v1.metrics.accuracy(
         label, predicted)
-    metrics[s + '_auc'] = tf.metrics.auc(
+    metrics[s + '_auc'] = tf.compat.v1.metrics.auc(
         label, predicted)
-    metrics[s + '_precision'] = tf.metrics.precision(
+    metrics[s + '_precision'] = tf.compat.v1.metrics.precision(
         label, predicted)
-    metrics[s + '_recall'] = tf.metrics.recall(
+    metrics[s + '_recall'] = tf.compat.v1.metrics.recall(
         label, predicted)
-    metrics[s + '_pos_freq'] = tf.metrics.accuracy(
+    metrics[s + '_pos_freq'] = tf.compat.v1.metrics.accuracy(
         tf.ones_like(label), label)
   return metrics
 
@@ -878,7 +880,7 @@ class BCZModel(abstract_model.AbstractT2RModel):
     if self._init_checkpoint is not None:
       # Load checkpoint root scope (key) into this model's root scope (value).
       assignment_map = {'/': '/'}
-      tf.train.init_from_checkpoint(self._init_checkpoint, assignment_map)
+      tf.compat.v1.train.init_from_checkpoint(self._init_checkpoint, assignment_map)
     return outputs
 
   def model_train_fn(self,
@@ -905,7 +907,7 @@ class BCZModel(abstract_model.AbstractT2RModel):
     metrics = {}
     if train_outputs is not None:
       for key, value in train_outputs.items():
-        metrics['mean_' + key] = tf.metrics.mean(value)
+        metrics['mean_' + key] = tf.compat.v1.metrics.mean(value)
     name = None
     if self.is_joint_space:
       name = 'mean_first_arm_joints_error'
@@ -917,7 +919,7 @@ class BCZModel(abstract_model.AbstractT2RModel):
     if self._predict_stop:
       predictions = tf.argmax(
           inference_outputs['stop_state'], axis=-1, output_type=tf.int64)
-      metrics['accuracy_stop_state'] = tf.metrics.accuracy(
+      metrics['accuracy_stop_state'] = tf.compat.v1.metrics.accuracy(
           labels.future.stop_state, predictions)
 
     # Explicit not-None check required here, or else TensorFlow type checking
@@ -941,10 +943,10 @@ class BCZModel(abstract_model.AbstractT2RModel):
     if not self.use_summaries(params):
       return
     if 'image' in features.keys():
-      tf.summary.image('image', inference_outputs['image'])
+      tf.compat.v1.summary.image('image', inference_outputs['image'])
     # Losses
     if train_outputs:
       for key, value in train_outputs.items():
         # Exclude Tensors with ndims >= 2
         if not (isinstance(value, tf.Tensor) and len(value.shape) >= 2):
-          tf.summary.scalar(key, value)
+          tf.compat.v1.summary.scalar(key, value)

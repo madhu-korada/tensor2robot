@@ -19,7 +19,7 @@
 from typing import List, Union
 
 import six
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 Example = Union[tf.train.Example, tf.train.SequenceExample]
 

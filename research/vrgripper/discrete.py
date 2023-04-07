@@ -23,8 +23,9 @@ from typing import List, Optional
 import gin
 import numpy as np
 from six.moves import range
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim
+import tensorflow as tf
+# from tensorflow.contrib import slim
+import tf_slim as slim
 
 
 def GetDiscreteBins(num_bins, output_min, output_max):
@@ -98,7 +99,7 @@ def GetDiscreteActionLoss(logits, action_labels, bin_centers, num_bins):
   onehot_labels = tf.one_hot(discrete_labels, num_bins)
   onehot_labels = tf.reshape(onehot_labels, (-1, num_bins))
   logits = tf.reshape(logits, (-1, num_bins))
-  loss = tf.nn.softmax_cross_entropy_with_logits_v2(onehot_labels, logits)
+  loss = tf.nn.softmax_cross_entropy_with_logits(onehot_labels, logits)
   loss = tf.reduce_mean(loss)
   return loss
 

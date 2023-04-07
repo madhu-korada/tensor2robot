@@ -24,7 +24,7 @@ import gin
 import six
 from tensor2robot.models import abstract_model
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS
@@ -60,7 +60,7 @@ class RegressionModel(abstract_model.AbstractT2RModel):
              mode,
              config = None,
              params = None,
-             reuse=tf.AUTO_REUSE):
+             reuse=tf.compat.v1.AUTO_REUSE):
     """A(state) regression function.
 
     This function can return a stochastic or a deterministic tensor.
@@ -114,7 +114,7 @@ class RegressionModel(abstract_model.AbstractT2RModel):
       A scalar loss tensor.
     """
     del mode, params
-    return tf.losses.mean_squared_error(
+    return tf.compat.v1.losses.mean_squared_error(
         labels=labels.target, predictions=inference_outputs['inference_output'])
 
   def inference_network_fn(self,
@@ -131,7 +131,7 @@ class RegressionModel(abstract_model.AbstractT2RModel):
         scope='a_func',
         config=config,
         params=params,
-        reuse=tf.AUTO_REUSE)
+        reuse=tf.compat.v1.AUTO_REUSE)
 
     if not isinstance(outputs, dict):
       raise ValueError('The output of a_func is expected to be a dict.')
@@ -141,7 +141,7 @@ class RegressionModel(abstract_model.AbstractT2RModel):
                        'key in outputs but is not in {}.'.format(
                            list(outputs.keys())))
     if self.use_summaries(params):
-      tf.summary.histogram('inference_output', outputs['inference_output'])
+      tf.compat.v1.summary.histogram('inference_output', outputs['inference_output'])
     return outputs
 
   def model_train_fn(self,

@@ -18,7 +18,7 @@
 from absl.testing import parameterized
 from six.moves import range
 from tensor2robot.meta_learning import maml_inner_loop
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import graph_editor as contrib_graph_editor
 
 LEARNING_RATE = 0.001
@@ -32,7 +32,7 @@ X_INIT = 2.0
 
 def create_inputs():
   features = {
-      COEFF_A: tf.placeholder(name=COEFF_A, shape=(1,), dtype=tf.float32),
+      COEFF_A: tf.compat.v1.placeholder(name=COEFF_A, shape=(1,), dtype=tf.float32),
   }
   labels = {
       TARGET: tf.constant([TARGET_VALUE], dtype=tf.float32)
@@ -42,11 +42,11 @@ def create_inputs():
 
 def inference_network_fn(features, labels=None, mode=None, params=None):
   del labels, mode, params
-  x = tf.get_variable(
+  x = tf.compat.v1.get_variable(
       'x',
       shape=(1,),
       dtype=tf.float32,
-      initializer=tf.constant_initializer([X_INIT], dtype=tf.float32))
+      initializer=tf.compat.v1.constant_initializer([X_INIT], dtype=tf.float32))
   return {'prediction': x * features[COEFF_A]}
 
 
@@ -57,7 +57,7 @@ def model_train_fn(features,
                    config=None,
                    params=None):
   del features, mode, config, params
-  return tf.losses.mean_squared_error(
+  return tf.compat.v1.losses.mean_squared_error(
       labels=labels[TARGET], predictions=inference_outputs['prediction'])
 
 
@@ -69,13 +69,13 @@ def learned_model_train_fn(features,
                            params=None):
   """A model_train_fn where the loss function itself is learned."""
   del features, labels, mode, config, params
-  with tf.variable_scope('learned_loss', reuse=tf.AUTO_REUSE):
-    learned_label = tf.get_variable(
+  with tf.compat.v1.variable_scope('learned_loss', reuse=tf.compat.v1.AUTO_REUSE):
+    learned_label = tf.compat.v1.get_variable(
         'learned_label',
         shape=(1,),
         dtype=tf.float32,
-        initializer=tf.constant_initializer([1.0], dtype=tf.float32))
-  return tf.losses.mean_squared_error(
+        initializer=tf.compat.v1.constant_initializer([1.0], dtype=tf.float32))
+  return tf.compat.v1.losses.mean_squared_error(
       labels=learned_label, predictions=inference_outputs['prediction'])
 
 
@@ -86,7 +86,7 @@ def dummy_inner_loop(inputs_list, maml_inner_loop_instance):
   # we have the inner loop and we do gradient descent, we might overshoot
   # and thus the loss might increase despite having a good starting x.
   inner_losses = []
-  with tf.variable_scope(
+  with tf.compat.v1.variable_scope(
       'inner_loop',
       custom_getter=maml_inner_loop_instance._create_variable_getter_fn()):
     for train_features, train_labels in inputs_list[:-1]:
@@ -139,7 +139,7 @@ class MAMLInnerLoopGradientDescentTest(
 
       # Our custom getter variable cache has not been populated.
       self.assertEmpty(maml_inner_loop_instance._custom_getter_variable_cache)
-      with tf.variable_scope(
+      with tf.compat.v1.variable_scope(
           'init_variables',
           custom_getter=maml_inner_loop_instance._create_variable_getter_fn()):
         outputs = inference_network_fn(features=features)
@@ -158,7 +158,7 @@ class MAMLInnerLoopGradientDescentTest(
         # compute_and_apply_gradients has populated the cache.
         self.assertLen(maml_inner_loop_instance._variable_cache, 1)
 
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         variables = sess.run(maml_inner_loop_instance._variable_cache[0])
         self.assertEqual(variables['init_variables/x'], X_INIT)
 
@@ -169,7 +169,7 @@ class MAMLInnerLoopGradientDescentTest(
     # is indeed larger than the "first order" graph.
     for use_second_order in [False, True]:
       graph = tf.Graph()
-      with tf.Session(graph=graph) as sess:
+      with tf.compat.v1.Session(graph=graph) as sess:
         maml_inner_loop_instance = maml_inner_loop.MAMLInnerLoopGradientDescent(
             learning_rate=LEARNING_RATE,
             use_second_order=use_second_order,
@@ -180,7 +180,7 @@ class MAMLInnerLoopGradientDescentTest(
         outer_loss, inner_losses = dummy_inner_loop(
             [inputs, inputs, inputs], maml_inner_loop_instance)
 
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
 
         # Here we check that we actually improved with our gradient descent
         # steps.
@@ -201,7 +201,7 @@ class MAMLInnerLoopGradientDescentTest(
         self.assertLess(np_outer_loss, np_inner_losses[-1])
 
         # Now we optimize the outer loop.
-        optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE)
+        optimizer = tf.compat.v1.train.GradientDescentOptimizer(LEARNING_RATE)
         train_op = optimizer.minimize(outer_loss)
 
         # Again we know that the x sequence is converging, the loss might
@@ -215,7 +215,7 @@ class MAMLInnerLoopGradientDescentTest(
           self.assertLess(x_new, x_previous)
           x_previous = x_new
 
-        tensors.append(contrib_graph_editor.get_tensors(tf.get_default_graph()))
+        tensors.append(contrib_graph_editor.get_tensors(tf.compat.v1.get_default_graph()))
 
     # When we use second order, we have a larger graph due to the additional
     # required computation nodes.
@@ -228,7 +228,7 @@ class MAMLInnerLoopGradientDescentTest(
     # is indeed larger than the "first order" graph.
     for use_second_order in [False, True]:
       graph = tf.Graph()
-      with tf.Session(graph=graph) as sess:
+      with tf.compat.v1.Session(graph=graph) as sess:
         maml_inner_loop_instance = maml_inner_loop.MAMLInnerLoopGradientDescent(
             learning_rate=LEARNING_RATE,
             use_second_order=use_second_order,
@@ -244,11 +244,11 @@ class MAMLInnerLoopGradientDescentTest(
         outer_loss = model_train_fn(
             features=features, labels=labels, inference_outputs=outputs)
         # Now we optimize the outer loop.
-        optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE)
+        optimizer = tf.compat.v1.train.GradientDescentOptimizer(LEARNING_RATE)
         train_op = optimizer.minimize(outer_loss)
 
         # Initialize the variables manually.
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
 
         # We make sure we can run the inner loop.
         sess.run(outputs, feed_dict={features[COEFF_A]: [COEFF_A_VALUE]})
@@ -267,7 +267,7 @@ class MAMLInnerLoopGradientDescentTest(
           self.assertLess(x_new, x_previous)
           x_previous = x_new
 
-        tensors.append(contrib_graph_editor.get_tensors(tf.get_default_graph()))
+        tensors.append(contrib_graph_editor.get_tensors(tf.compat.v1.get_default_graph()))
 
     # When we use second order, we have a larger graph due to the additional
     # required computation nodes.
@@ -280,20 +280,20 @@ class MAMLInnerLoopGradientDescentTest(
     # learned loss variables should be created *outside* the 'inner_loop' scope
     # since they do not adapt.
     graph = tf.Graph()
-    with tf.Session(graph=graph):
+    with tf.compat.v1.Session(graph=graph):
       inputs = create_inputs()
       features, _ = inputs
       # Record how many trainable vars a call to inference_network_fn creates.
-      with tf.variable_scope('test_scope'):
+      with tf.compat.v1.variable_scope('test_scope'):
         inference_network_fn(features)
-      expected_num_train_vars = len(tf.trainable_variables(scope='test_scope'))
+      expected_num_train_vars = len(tf.compat.v1.trainable_variables(scope='test_scope'))
       maml_inner_loop_instance = maml_inner_loop.MAMLInnerLoopGradientDescent(
           learning_rate=LEARNING_RATE, learn_inner_lr=learn_inner_lr)
       maml_inner_loop_instance.inner_loop(
           [inputs, inputs, inputs],
           inference_network_fn,
           learned_model_train_fn)
-      num_train_vars = len(tf.trainable_variables(scope='inner_loop'))
+      num_train_vars = len(tf.compat.v1.trainable_variables(scope='inner_loop'))
       self.assertEqual(expected_num_train_vars, num_train_vars)
 
 

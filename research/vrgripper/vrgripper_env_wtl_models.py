@@ -31,7 +31,7 @@ from tensor2robot.research.vrgripper import episode_to_transitions
 from tensor2robot.research.vrgripper import vrgripper_env_models
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 TRAIN = tf_estimator.ModeKeys.TRAIN
 PREDICT = tf_estimator.ModeKeys.PREDICT
@@ -257,7 +257,7 @@ class VRGripperEnvSimpleTrialModel(abstract_model.AbstractT2RModel):
         fc_inputs.append(con_success[:, 1:2, :, :])
       fc_inputs = tf.concat(fc_inputs, -1)
     outputs = {}
-    with tf.variable_scope('a_func', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope('a_func', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       if self._num_mixture_components > 1:
         fc_inputs, _ = meta_tfdata.multi_batch_apply(
             vision_layers.BuildImageFeaturesToPoseModel, 3, fc_inputs,
@@ -300,11 +300,11 @@ class VRGripperEnvSimpleTrialModel(abstract_model.AbstractT2RModel):
           self._action_size)
       bc_loss = -tf.reduce_mean(gm.log_prob(labels.action))
     else:
-      bc_loss = tf.losses.mean_squared_error(
+      bc_loss = tf.compat.v1.losses.mean_squared_error(
           labels=labels.action,
           predictions=inference_outputs['inference_output'])
     if mode == TRAIN and self.use_summaries(params):
-      tf.summary.scalar('bc_loss', bc_loss)
+      tf.compat.v1.summary.scalar('bc_loss', bc_loss)
     return bc_loss
 
   def model_eval_fn(
@@ -321,7 +321,7 @@ class VRGripperEnvSimpleTrialModel(abstract_model.AbstractT2RModel):
     if train_outputs is not None:
       eval_outputs = {}
       for key, value in train_outputs.items():
-        eval_outputs['mean_' + six.ensure_str(key)] = tf.metrics.mean(value)
+        eval_outputs['mean_' + six.ensure_str(key)] = tf.compat.v1.metrics.mean(value)
       return eval_outputs
 
   def get_run_config(self):
@@ -470,8 +470,8 @@ class VRGripperEnvVisionTrialModel(abstract_model.AbstractT2RModel):
     fc_embedding = tf.tile(
         condition_embedding[:, :, None, :],
         [1, 1, self._episode_length, 1])
-    with tf.variable_scope(
-        'state_features', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope(
+        'state_features', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       state_features, _ = meta_tfdata.multi_batch_apply(
           vision_layers.BuildImagesToFeaturesModel, 3,
           features.inference.features.image)
@@ -481,7 +481,7 @@ class VRGripperEnvVisionTrialModel(abstract_model.AbstractT2RModel):
       fc_inputs = tf.concat([state_features, gripper_pose, fc_embedding], -1)
 
     outputs = {}
-    with tf.variable_scope('a_func', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope('a_func', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       if self._num_mixture_components > 1:
         dist_params = meta_tfdata.multi_batch_apply(
             mdn.predict_mdn_params, 3,
@@ -517,12 +517,12 @@ class VRGripperEnvVisionTrialModel(abstract_model.AbstractT2RModel):
           self._action_size)
       bc_loss = -tf.reduce_mean(gm.log_prob(labels.action))
     else:
-      bc_loss = tf.losses.mean_squared_error(
+      bc_loss = tf.compat.v1.losses.mean_squared_error(
           labels=labels.action,
           predictions=inference_outputs['inference_output'])
     train_outputs = {'bc_loss': bc_loss}
     if mode == TRAIN and self.use_summaries(params):
-      tf.summary.scalar('bc_loss', bc_loss)
+      tf.compat.v1.summary.scalar('bc_loss', bc_loss)
     return bc_loss, train_outputs
 
   def model_eval_fn(
@@ -539,7 +539,7 @@ class VRGripperEnvVisionTrialModel(abstract_model.AbstractT2RModel):
     if train_outputs is not None:
       eval_outputs = {}
       for key, value in train_outputs.items():
-        eval_outputs['mean_' + six.ensure_str(key)] = tf.metrics.mean(value)
+        eval_outputs['mean_' + six.ensure_str(key)] = tf.compat.v1.metrics.mean(value)
       return eval_outputs
 
   def get_run_config(self):

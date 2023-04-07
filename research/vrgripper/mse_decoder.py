@@ -18,8 +18,9 @@
 
 import gin
 
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim
+import tensorflow as tf
+# from tensorflow.contrib import slim
+import tf_slim as slim
 
 
 @gin.configurable
@@ -32,5 +33,5 @@ class MSEDecoder(object):
     return self._predictions
 
   def loss(self, labels):
-    return tf.losses.mean_squared_error(labels=labels.action,
+    return tf.compat.v1.losses.mean_squared_error(labels=labels.action,
                                         predictions=self._predictions)

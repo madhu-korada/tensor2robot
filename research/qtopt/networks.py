@@ -20,10 +20,10 @@ import gin
 
 from six.moves import range
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tf_slim as slim
 
-from tensorflow.contrib import framework as contrib_framework
+# from tensorflow.contrib import framework as contrib_framework
 from tensorflow.contrib import seq2seq as contrib_seq2seq
 
 # Global constant. The number of layers that are part of the PNN.
@@ -140,14 +140,14 @@ class GraspingModel(object):
       loss_type: The type of loss to use.
       use_tpu: Whether to run on TPU.
     """
-    logits = tf.check_numerics(logits, 'Logits is not a number.')
-    label = tf.check_numerics(label, 'Label is not a number.')
+    logits = tf.debugging.check_numerics(logits, 'Logits is not a number.')
+    label = tf.debugging.check_numerics(label, 'Label is not a number.')
     if loss_type == 'cross_entropy':
       slim.losses.softmax_cross_entropy(logits, label)
     elif loss_type == 'log':
       slim.losses.log_loss(end_points['predictions'], label)
     elif loss_type == 'huber':
-      tf.losses.huber_loss(label, end_points['predictions'])
+      tf.compat.v1.losses.huber_loss(label, end_points['predictions'])
     else:
       slim.losses.sum_of_squares(end_points['predictions'], label)
 
@@ -416,7 +416,7 @@ class Grasping44FlexibleGraspParams(GraspingModel):
         dim = tf.shape(feature)[2]
         return tf.reshape(feature, [-1, dim])
 
-      grasp_params = contrib_framework.nest.map_structure(
+      grasp_params = tf.nest.map_structure(
           expand_to_megabatch, grasp_params)
 
     # Note that we need to do this before calling the tf.variable_scope
@@ -429,8 +429,8 @@ class Grasping44FlexibleGraspParams(GraspingModel):
       with slim.arg_scope([slim.dropout], is_training=is_training):
         with slim.arg_scope(
             [slim.conv2d, slim.fully_connected],
-            weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
-            weights_regularizer=slim.l2_regularizer(self._l2_regularization),
+            weights_initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.01),
+            weights_regularizer=tf.keras.regularizers.l2(0.5 * (self._l2_regularization)),
             activation_fn=tf.nn.relu,
             trainable=is_training):
           with slim.arg_scope(
@@ -594,7 +594,7 @@ class Grasping44FlexibleGraspParams(GraspingModel):
     if self._create_var_scope:
       if scope is None:
         scope = self.__class__.__name__
-      with tf.variable_scope(scope,
+      with tf.compat.v1.variable_scope(scope,
                              values=[images],
                              reuse=reuse):
         with slim.arg_scope([slim.batch_norm],

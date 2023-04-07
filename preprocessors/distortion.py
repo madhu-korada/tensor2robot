@@ -16,7 +16,7 @@
 """Shared utils for image distorton and cropping."""
 
 from tensor2robot.preprocessors import image_transformations
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 
@@ -94,7 +94,7 @@ def preprocess_image(image,
   image = crop_image(
       image, mode, input_size=input_size, target_size=crop_size)
   # Reshape to target size.
-  image = tf.image.resize_images(image, target_size)
+  image = tf.image.resize(image, target_size)
 
   # Convert dtype and distort.
   image = image_distortion_fn(image, mode=mode)

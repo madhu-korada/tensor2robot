@@ -17,7 +17,7 @@
 
 from six.moves import range
 from tensor2robot.research.vrgripper import episode_to_transitions
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class EpisodeToTransitionsTest(tf.test.TestCase):

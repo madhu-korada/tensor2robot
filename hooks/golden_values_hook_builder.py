@@ -26,7 +26,7 @@ import gin
 import numpy as np
 from tensor2robot.hooks import hook_builder
 from tensor2robot.models import model_interface
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 ModeKeys = tf_estimator.ModeKeys
@@ -36,10 +36,10 @@ PREFIX = 'golden_'
 
 def add_golden_tensor(tensor, name):
   """Adds tensor to be tracked."""
-  tf.add_to_collection(COLLECTION, tf.identity(tensor, name=PREFIX + name))
+  tf.compat.v1.add_to_collection(COLLECTION, tf.identity(tensor, name=PREFIX + name))
 
 
-class GoldenValuesHook(tf.train.SessionRunHook):
+class GoldenValuesHook(tf.estimator.SessionRunHook):
   """SessionRunHook that saves loss metrics to file."""
 
   def __init__(self,
@@ -56,13 +56,13 @@ class GoldenValuesHook(tf.train.SessionRunHook):
             self._measurements)
 
   def before_run(self, run_context):
-    return tf.train.SessionRunArgs(
-        fetches=tf.get_collection_ref(COLLECTION))
+    return tf.estimator.SessionRunArgs(
+        fetches=tf.compat.v1.get_collection_ref(COLLECTION))
 
   def after_run(self, run_context, run_values):
     # Strip the 'golden_' prefix before saving the data.
     golden_values = {t.name.split(PREFIX)[1]: v for t, v in
-                     zip(tf.get_collection_ref(COLLECTION), run_values.results)}
+                     zip(tf.compat.v1.get_collection_ref(COLLECTION), run_values.results)}
     logging.info('Recorded golden values for %s', golden_values.keys())
     self._measurements.append(golden_values)
 

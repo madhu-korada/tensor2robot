@@ -19,9 +19,10 @@
 import gin
 import numpy as np
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_probability as tfp
-from tensorflow.contrib import slim
+# from tensorflow.contrib import slim
+import tf_slim as slim
 tfd = tfp.distributions
 tfb = tfp.bijectors
 
@@ -44,7 +45,7 @@ def init_once(x, name):
   [1] https://www.tensorflow.org/probability/api_docs/python/
   tfp/bijectors/Permute
   """
-  return tf.get_variable(name, initializer=x, trainable=False)
+  return tf.compat.v1.get_variable(name, initializer=x, trainable=False)
 
 
 def maf_bijector(event_size, num_flows, hidden_layers):

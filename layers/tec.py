@@ -22,7 +22,7 @@ from typing import Optional, Text, Tuple
 
 import gin
 from tensor2robot.layers import vision_layers
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 from tf_slim import losses as slim_losses
 from tensorflow.contrib import layers
 
@@ -30,7 +30,7 @@ from tensorflow.contrib import layers
 def embed_fullstate(fullstate,
                     embed_size,
                     scope,
-                    reuse=tf.AUTO_REUSE,
+                    reuse=tf.compat.v1.AUTO_REUSE,
                     fc_layers=(100,)):
   """Embed full state pose (non-image) observations.
 
@@ -45,7 +45,7 @@ def embed_fullstate(fullstate,
   Returns:
     A rank 2 tensor: [N, embed_size].
   """
-  with tf.variable_scope(scope, reuse=reuse, use_resource=True):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
     embedding = layers.stack(
         fullstate,
         layers.fully_connected,
@@ -60,7 +60,7 @@ def embed_fullstate(fullstate,
 @gin.configurable
 def embed_condition_images(condition_image,
                            scope,
-                           reuse=tf.AUTO_REUSE,
+                           reuse=tf.compat.v1.AUTO_REUSE,
                            fc_layers = None,
                            use_spatial_softmax = True):
   """Independently embed a (meta)-batch of images.
@@ -84,7 +84,7 @@ def embed_condition_images(condition_image,
   if len(condition_image.shape) != 4:
     raise ValueError('Image has unexpected shape {}.'.format(
         condition_image.shape))
-  with tf.variable_scope(scope, reuse=reuse, use_resource=True):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
     image_embedding, _ = vision_layers.BuildImagesToFeaturesModel(
         condition_image, use_spatial_softmax=use_spatial_softmax)
     if fc_layers is not None:
@@ -115,7 +115,7 @@ def reduce_temporal_embeddings(
     temporal_embedding,
     output_size,
     scope,
-    reuse=tf.AUTO_REUSE,
+    reuse=tf.compat.v1.AUTO_REUSE,
     conv1d_layers = (64,),
     fc_hidden_layers = (100,),
     combine_mode = 'temporal_conv'):
@@ -143,14 +143,14 @@ def reduce_temporal_embeddings(
     raise ValueError('Temporal embedding has unexpected shape {}.'.format(
         temporal_embedding.shape))
   embedding = temporal_embedding
-  with tf.variable_scope(scope, reuse=reuse, use_resource=True):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
     if 'temporal_conv' not in combine_mode:
       # Just average
       embedding = tf.reduce_mean(embedding, axis=1)
     else:
       if conv1d_layers is not None:
         for num_filters in conv1d_layers:
-          embedding = tf.layers.conv1d(
+          embedding = tf.compat.v1.layers.conv1d(
               embedding, num_filters, 10, activation=tf.nn.relu, use_bias=False)
           embedding = layers.layer_norm(embedding)
       if combine_mode == 'temporal_conv_avg_after':
@@ -360,7 +360,7 @@ def cosine_triplet_semihard_loss(labels, embeddings, margin=1.0):
   # negatives_inside: largest D_an.
   negatives_inside = tf.tile(
       masked_maximum(pdist_matrix, adjacency_not), [1, batch_size])
-  semi_hard_negatives = tf.where(
+  semi_hard_negatives = tf.compat.v1.where(
       mask_final, negatives_outside, negatives_inside)
 
   loss_mat = tf.math.add(margin, pdist_matrix - semi_hard_negatives)

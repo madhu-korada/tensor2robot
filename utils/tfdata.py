@@ -23,14 +23,14 @@ import gin
 import six
 
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
-
+import tensorflow as tf
+from tensorflow.compat.v1 import estimator as tf_estimator
 
 DATA_FORMAT = {
     'tfrecord': tf.data.TFRecordDataset
 }
 RECORD_READER = {
-    'tfrecord': tf.TFRecordReader
+    'tfrecord': tf.compat.v1.TFRecordReader
 }
 SUPPORTED_PIXEL_ENCODINGS = [tf.uint8, tf.uint16]
 
@@ -329,14 +329,14 @@ def create_parse_tf_example_fn(feature_tspec, label_tspec=None,
       def maybe_map_bfloat(value):
         """Maps bfloat16 to float32."""
         if is_bfloat_feature(value):
-          if isinstance(value, tf.FixedLenFeature):
-            return tf.FixedLenFeature(
+          if isinstance(value, tf.io.FixedLenFeature):
+            return tf.io.FixedLenFeature(
                 value.shape, tf.float32, default_value=value.default_value)
-          elif isinstance(value, tf.VarLenFeature):
-            return tf.VarLenFeature(
+          elif isinstance(value, tf.io.VarLenFeature):
+            return tf.io.VarLenFeature(
                 value.shape, tf.float32, default_value=value.default_value)
           else:
-            return tf.FixedLenSequenceFeature(
+            return tf.io.FixedLenSequenceFeature(
                 value.shape, tf.float32, default_value=value.default_value)
         return value
 
@@ -355,11 +355,11 @@ def create_parse_tf_example_fn(feature_tspec, label_tspec=None,
       context_features, sequence_features = {}, {}
       for k, v in six.iteritems(new_spec_dict):
         v = maybe_map_bfloat(v)
-        if isinstance(v, tf.FixedLenSequenceFeature):
+        if isinstance(v, tf.io.FixedLenSequenceFeature):
           sequence_features[k] = v
-        elif isinstance(v, tf.FixedLenFeature):
+        elif isinstance(v, tf.io.FixedLenFeature):
           context_features[k] = v
-        elif isinstance(v, tf.VarLenFeature):
+        elif isinstance(v, tf.io.VarLenFeature):
           context_features[k] = v
         else:
           raise ValueError(
@@ -382,7 +382,7 @@ def create_parse_tf_example_fn(feature_tspec, label_tspec=None,
         for parse_name, length_tensor in feature_lengths.items():
           result[parse_name + '_length'] = length_tensor
       else:
-        result = tf.parse_example(example, context_features)
+        result = tf.io.parse_example(example, context_features)
       to_convert = [
           k for k, v in six.iteritems(spec_dict) if is_bfloat_feature(v)
       ]
@@ -570,15 +570,15 @@ def create_compress_fn(feature_spec,
         parallel_iterations=tensor.shape[0])
 
   def compress_fn(features, labels=None):
-    with tf.name_scope('compress_fn'):
+    with tf.compat.v1.name_scope('compress_fn'):
       for key, value in feature_spec.items():
         if value.data_format == 'jpeg':
-          tf.logging.info('Compressing feature {}.', key)
+          tf.compat.v1.logging.info('Compressing feature {}.', key)
           features[key] = compress(features[key])
       if labels is not None:
         for key, value in label_spec.items():
           if value.data_format == 'jpeg':
-            tf.logging.info('Compressing label {}.', key)
+            tf.compat.v1.logging.info('Compressing label {}.', key)
             labels[key] = compress(labels[key])
       return features, labels
 
@@ -611,15 +611,15 @@ def create_decompress_fn(feature_spec,
         (tensor.shape[0],) + tensorspec.shape)
 
   def decompress_fn(features, labels=None):
-    with tf.name_scope('decompress_fn'):
+    with tf.compat.v1.name_scope('decompress_fn'):
       for key, value in feature_spec.items():
         if value.data_format == 'jpeg':
-          tf.logging.info('Decompressing feature {}.', key)
+          tf.compat.v1.logging.info('Decompressing feature {}.', key)
           features[key] = decompress(features[key], value)
       if labels is not None:
         for key, value in label_spec.items():
           if value.data_format == 'jpeg':
-            tf.logging.info('Decompressing label {}.', key)
+            tf.compat.v1.logging.info('Decompressing label {}.', key)
             labels[key] = decompress(labels[key], value)
     return features, labels
 

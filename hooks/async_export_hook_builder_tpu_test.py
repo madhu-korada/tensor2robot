@@ -22,7 +22,7 @@ from tensor2robot.predictors import exported_savedmodel_predictor
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.utils import mocks
 from tensor2robot.utils import train_eval
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 _EXPORT_DIR = 'export_dir'
 _BATCH_SIZES_FOR_EXPORT = [128]

@@ -21,7 +21,7 @@ import gin.tf.external_configurables
 import numpy as np
 from six.moves import range
 from tensor2robot.preprocessors import image_transformations
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 
 class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
@@ -73,7 +73,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
                                           input_shape[1])
       cropped = image_transformations.RandomCropImages([images], input_shape,
                                                        output_shape)[0]
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         cropped_image = sess.run(cropped)
         self.assertAllEqual(cropped_image.shape,
                             [batch_size] + output_shape + [3])
@@ -89,7 +89,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
       batch_size = 4
       images = self._CreateRampTestImages(batch_size, input_shape[0],
                                           input_shape[1])
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         with self.assertRaises(tf.errors.InvalidArgumentError):
           cropped = image_transformations.RandomCropImages([images],
                                                            input_shape,
@@ -161,7 +161,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
                                           input_shape[1])
       cropped = image_transformations.CenterCropImages([images], input_shape,
                                                        output_shape)[0]
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         cropped_image = sess.run(cropped)
         # Check cropped shape.
         self.assertAllEqual(cropped_image.shape,
@@ -194,7 +194,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
       distorted = image_transformations.ApplyPhotometricImageDistortions(
           tensor_list, random_noise_apply_probability=1.0)
       delta = tf.reduce_sum(tf.square(images - distorted))
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         images_delta = sess.run(delta)
         # Check if any distortion applied.
         self.assertGreater(images_delta, 0)
@@ -214,7 +214,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
           random_contrast=True,
           random_noise_apply_probability=1.0)
       delta = tf.reduce_sum(tf.square(images - distorted))
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         images_delta = sess.run(delta)
         # Check if any distortion applied.
         self.assertGreater(images_delta, 0)
@@ -243,7 +243,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
           custom_distortion_fn=custom_distortion_fn)
       min_value_tensor = tf.reduce_min(distorted, axis=[0, 1, 2, 3])
       max_value_tensor = tf.reduce_max(distorted, axis=[0, 1, 2, 3])
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         min_value, max_value = sess.run([min_value_tensor, max_value_tensor])
         # Check if any distortion applied.
         self.assertEqual(min_value, max_value)
@@ -262,7 +262,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
       distorted = image_transformations.ApplyDepthImageDistortions(
           tensor_list, random_noise_apply_probability=1.0)
       depth_delta = tf.reduce_sum(tf.square(depth_images - distorted))
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         depth_images_delta = sess.run(depth_delta)
         # Check if any distortion applied.
         self.assertGreater(depth_images_delta, 0)
@@ -279,7 +279,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
                                                        input_shape,
                                                        target_shape,
                                                        [target_locations])[0]
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         cropped_image = sess.run(cropped)
         self.assertAllEqual(cropped_image.shape,
                             [batch_size] + target_shape + [3])
@@ -299,7 +299,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
       target_locations = tf.tile(tf.expand_dims(target_locations, 0),
                                  [batch_size, 1])
 
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         with self.assertRaises(ValueError):
           cropped = image_transformations.CustomCropImages(
               [images], input_shape, target_shape, [target_locations])[0]
@@ -311,7 +311,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
     gin.bind_parameter('tf.random.uniform.seed', 0)
     gin.bind_parameter('tf.random.normal.seed', 0)
     with tf.Graph().as_default():
-      tf.set_random_seed(123)
+      tf.compat.v1.set_random_seed(123)
       batch_size = 4
       images = self._CreateRampTestImages(batch_size, input_shape[0],
                                           input_shape[1])
@@ -322,7 +322,7 @@ class ImageTransformationsTest(tf.test.TestCase, parameterized.TestCase):
           tensor_list, random_noise_apply_probability=1.0)
       distorted_2 = image_transformations.ApplyPhotometricImageDistortions(
           tensor_list, random_noise_apply_probability=1.0)
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         images_1 = sess.run(distorted_1)
         images_2 = sess.run(distorted_2)
         for image_1, image_2 in zip(images_1, images_2):

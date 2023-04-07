@@ -24,7 +24,7 @@ from tensor2robot.research.grasp2vec import losses
 from tensor2robot.research.grasp2vec import networks
 from tensor2robot.research.grasp2vec import visualization
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 TRAIN = tf_estimator.ModeKeys.TRAIN
@@ -58,9 +58,9 @@ def maybe_crop_images(images,
   (min_offset_height, max_offset_height, target_height,
    min_offset_width, max_offset_width, target_width) = params
   if mode == TRAIN:
-    offset_height = tf.random_uniform(
+    offset_height = tf.random.uniform(
         (), minval=min_offset_height, maxval=max_offset_height, dtype=tf.int32)
-    offset_width = tf.random_uniform(
+    offset_width = tf.random.uniform(
         (), minval=min_offset_width, maxval=max_offset_width, dtype=tf.int32)
   else:
     offset_height = (min_offset_height + max_offset_height)//2
@@ -232,7 +232,7 @@ class Grasp2VecModel(abstract_model.AbstractT2RModel):
     for key in ['pregrasp', 'postgrasp', 'goal']:
       feature_name = key + '_image'
       if feature_name in list(features.keys()):
-        tf.summary.image('image/%s' % key, features[feature_name])
+        tf.compat.v1.summary.image('image/%s' % key, features[feature_name])
     heatmaps = visualization.add_heatmap_summary(
         inference_outputs['goal_vector'], inference_outputs['pre_spatial'],
         'goal_pregrasp_map')

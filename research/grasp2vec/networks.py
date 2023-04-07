@@ -17,11 +17,11 @@
 """
 
 from tensor2robot.research.grasp2vec import resnet
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 
-def Embedding(image, mode, params, reuse=tf.AUTO_REUSE, scope='scene'):
+def Embedding(image, mode, params, reuse=tf.compat.v1.AUTO_REUSE, scope='scene'):
   """Implements scene or goal embedding.
 
   Args:
@@ -35,7 +35,7 @@ def Embedding(image, mode, params, reuse=tf.AUTO_REUSE, scope='scene'):
   """
   del params
   is_training = mode == tf_estimator.ModeKeys.TRAIN
-  with tf.variable_scope(scope, reuse=reuse):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse):
     scene = resnet.get_resnet50_spatial(image, is_training)
     scene = tf.nn.relu(scene)
     summed_scene = tf.reduce_mean(scene, axis=[1, 2])

@@ -17,7 +17,7 @@
 
 import numpy as np
 from tensor2robot.layers import spatial_softmax
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class SpatialSoftmaxTest(tf.test.TestCase):
@@ -26,10 +26,10 @@ class SpatialSoftmaxTest(tf.test.TestCase):
 
     features = tf.convert_to_tensor(
         np.random.normal(size=(32, 16, 16, 64)).astype(np.float32))
-    with tf.variable_scope('mean_pool'):
+    with tf.compat.v1.variable_scope('mean_pool'):
       expected_feature_points, softmax = spatial_softmax.BuildSpatialSoftmax(
           features, spatial_gumbel_softmax=False)
-    with tf.variable_scope('gumbel_pool'):
+    with tf.compat.v1.variable_scope('gumbel_pool'):
       gumbel_feature_points, gumbel_softmax = (
           spatial_softmax.BuildSpatialSoftmax(
               features, spatial_gumbel_softmax=True))

@@ -22,7 +22,7 @@ from tensor2robot.hooks import td3
 from tensor2robot.utils import mocks
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 _BATCH_SIZES_FOR_EXPORT = [128]
 _MODEL_DIR = "model_dir"

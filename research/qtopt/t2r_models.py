@@ -30,7 +30,7 @@ from tensor2robot.preprocessors import spec_transformation_preprocessor
 from tensor2robot.research.qtopt import networks
 from tensor2robot.research.qtopt import optimizer_builder
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 from tensorflow.contrib import framework as contrib_framework
 from tensorflow.contrib import training as contrib_training
@@ -63,7 +63,7 @@ class LegacyGraspingModelWrapper(critic_model.CriticModel):
   """T2R wrapper class around grasping network definitions."""
 
   def __init__(self,
-               loss_function=tf.losses.log_loss,
+               loss_function=tf.compat.v1.losses.log_loss,
                learning_rate=1e-4,
                model_weights_averaging=.9999,
                momentum=.9,
@@ -131,9 +131,9 @@ class LegacyGraspingModelWrapper(critic_model.CriticModel):
 
   def get_global_step(self):
     # tf.train.get_global_step() does not work well under model_fn for TPU.
-    with tf.variable_scope('', reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope('', reuse=tf.compat.v1.AUTO_REUSE):
       return tf.broadcast_to(
-          tf.get_variable('global_step', shape=[], dtype=tf.int64),
+          tf.compat.v1.get_variable('global_step', shape=[], dtype=tf.int64),
           shape=(self._export_batch_size,))
 
   def q_func(self,
@@ -142,7 +142,7 @@ class LegacyGraspingModelWrapper(critic_model.CriticModel):
              mode,
              config = None,
              params = None,
-             reuse=tf.AUTO_REUSE):
+             reuse=tf.compat.v1.AUTO_REUSE):
     """See base class."""
     images = [features.state.image, features.state.image_1]
     grasp_params = tf.concat(
@@ -169,22 +169,22 @@ class LegacyGraspingModelWrapper(critic_model.CriticModel):
     def scaffold_fn():
       """Create a scaffold object."""
       # MovingAverageOptimizer requires Swapping Saver.
-      scaffold = tf.train.Scaffold()
+      scaffold = tf.compat.v1.train.Scaffold()
       if use_avg_model_params:
         saver = original_optimizer.swapping_saver(
             keep_checkpoint_every_n_hours=1)
       else:
         saver = None
-      scaffold = tf.train.Scaffold(saver=saver, copy_from_scaffold=scaffold)
+      scaffold = tf.compat.v1.train.Scaffold(saver=saver, copy_from_scaffold=scaffold)
       # The saver needs to be added to the graph for td3 hooks.
-      tf.add_to_collection(tf.GraphKeys.SAVERS, scaffold.saver)
+      tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.SAVERS, scaffold.saver)
       return scaffold
 
     self._scaffold_fn = scaffold_fn
     optimizer = original_optimizer
     if (self._use_sync_replicas_optimizer and
         config is not None and config.num_worker_replicas > 1):
-      optimizer = tf.train.SyncReplicasOptimizer(
+      optimizer = tf.compat.v1.train.SyncReplicasOptimizer(
           optimizer,
           replicas_to_aggregate=config.num_worker_replicas - 1,
           total_num_replicas=config.num_worker_replicas)
@@ -236,7 +236,7 @@ class LegacyGraspingModelWrapper(critic_model.CriticModel):
     """See base class."""
     del mode, config, params
     self.loss_fn(features, labels, inference_outputs)
-    return tf.losses.get_total_loss()
+    return tf.compat.v1.losses.get_total_loss()
 
 
 class DefaultGrasping44ImagePreprocessor(
@@ -369,7 +369,7 @@ class Grasping44E2EOpenCloseTerminateGripperStatusHeightToBottom(
              mode,
              config = None,
              params = None,
-             reuse=tf.AUTO_REUSE,
+             reuse=tf.compat.v1.AUTO_REUSE,
              goal_vector_fn=None,
              goal_spatial_fn=None):
     base_model = self.create_legacy_model()

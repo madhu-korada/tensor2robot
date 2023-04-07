@@ -23,11 +23,13 @@ from six.moves import range
 from tensor2robot.meta_learning import meta_tfdata
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.utils import tensorspec_utils as utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
-from tensorflow.contrib import framework as contrib_framework
+# from tensorflow.contrib import framework as contrib_framework
 
-nest = contrib_framework.nest
+# nest = contrib_framework.nest
+from tensorflow.python.util import nest
+
 TSpecStructure = utils.TensorSpecStruct
 
 

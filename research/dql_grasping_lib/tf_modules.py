@@ -17,9 +17,9 @@
 """
 
 import gin
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim
-
+import tensorflow as tf
+# from tensorflow.contrib import slim
+import tf_slim as slim
 
 @gin.configurable
 def argscope(is_training=None, normalizer_fn=slim.layer_norm):
@@ -34,7 +34,7 @@ def argscope(is_training=None, normalizer_fn=slim.layer_norm):
   with slim.arg_scope([slim.batch_norm, slim.dropout], is_training=is_training):
     with slim.arg_scope(
         [slim.conv2d, slim.fully_connected],
-        weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
+        weights_initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.01),
         activation_fn=tf.nn.relu,
         normalizer_fn=normalizer_fn):
       with slim.arg_scope(
@@ -55,7 +55,7 @@ def tile_to_match_context(net, context):
     element of net has been tiled M times where M = num_batch_context /
     num_batch_net.
   """
-  with tf.name_scope('tile_to_context'):
+  with tf.compat.v1.name_scope('tile_to_context'):
     num_samples = tf.shape(context)[1]
     net_examples = tf.expand_dims(net, 1)  # [batch_size, 1, ...]
 

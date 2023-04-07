@@ -28,7 +28,7 @@ from tensor2robot.models import abstract_model
 from tensor2robot.preprocessors import noop_preprocessor
 from tensor2robot.utils import mocks
 from tensor2robot.utils import train_eval
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 from tensorflow.contrib import predictor as contrib_predictor
 
@@ -40,7 +40,7 @@ _BATCH_SIZE = 4
 _EVAL_THROTTLE_SECS = 0.0
 
 
-class FakeHook(tf.train.SessionRunHook):
+class FakeHook(tf.estimator.SessionRunHook):
 
   def __init__(self):
     self._mock = mock.MagicMock()
@@ -268,7 +268,7 @@ class TrainEvalTest(tf.test.TestCase):
         max_train_steps=_MAX_TRAIN_STEPS,
         model_dir=model_dir)
 
-    init_checkpoint = tf.train.NewCheckpointReader(
+    init_checkpoint = tf.compat.v1.train.NewCheckpointReader(
         tf.train.latest_checkpoint(model_dir))
 
     # Verify that the serving estimator does exactly the same as the normal
@@ -302,7 +302,7 @@ class TrainEvalTest(tf.test.TestCase):
         model_dir=continue_model_dir,
         max_train_steps=_MAX_TRAIN_STEPS)
 
-    continue_checkpoint = tf.train.NewCheckpointReader(
+    continue_checkpoint = tf.compat.v1.train.NewCheckpointReader(
         tf.train.latest_checkpoint(continue_model_dir))
 
     for tensor_name, _ in tf.train.list_variables(model_dir):
@@ -370,9 +370,9 @@ class TrainEvalTest(tf.test.TestCase):
         max_train_steps=_MAX_TRAIN_STEPS,
         model_dir=model_dir)
 
-    start_checkpoint = tf.train.NewCheckpointReader(
+    start_checkpoint = tf.compat.v1.train.NewCheckpointReader(
         os.path.join(model_dir, 'model.ckpt-0'))
-    last_checkpoint = tf.train.NewCheckpointReader(
+    last_checkpoint = tf.compat.v1.train.NewCheckpointReader(
         tf.train.latest_checkpoint(model_dir))
     for var_name, _ in tf.train.list_variables(model_dir):
       # Some of the batch norm moving averages are constant over training on the

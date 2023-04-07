@@ -23,7 +23,7 @@ import numpy as np
 from tensor2robot.predictors import abstract_predictor
 from tensor2robot.predictors import exported_savedmodel_predictor
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 RestoreOptions = exported_savedmodel_predictor.RestoreOptions
 

@@ -21,11 +21,13 @@ from absl import logging
 import gin
 from six.moves import range
 from tensor2robot.layers import film_resnet_model as resnet_lib
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import framework as contrib_framework
-from tensorflow.contrib import slim as contrib_slim
+# from tensorflow.contrib import slim as contrib_slim
+# slim = contrib_slim
 
-slim = contrib_slim
+import tf_slim as slim
+
 
 
 def _get_block_sizes(resnet_size):
@@ -71,7 +73,7 @@ def _model_output(inputs, data_format):
 
 
 def _get_resnet_scope():
-  scope = tf.get_default_graph().get_name_scope()
+  scope = tf.compat.v1.get_default_graph().get_name_scope()
   if scope:
     scope += '/'
   return scope + 'resnet_model/'
@@ -79,7 +81,7 @@ def _get_resnet_scope():
 
 def resnet_endpoints(model):
   """Extract intermediate values from ResNet model."""
-  graph = tf.get_default_graph()
+  graph = tf.compat.v1.get_default_graph()
   scope = _get_resnet_scope()
   end_points = {}
   tensors = ['initial_conv', 'initial_max_pool', 'pre_final_pool',
@@ -224,9 +226,9 @@ def resnet_init_from_checkpoint_fn(checkpoint):
   assignment_map = {}
   resnet_scope = _get_resnet_scope()
   for var in contrib_framework.get_variables(
-      scope=resnet_scope, collection=tf.GraphKeys.TRAINABLE_VARIABLES):
+      scope=resnet_scope, collection=tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES):
     if 'dense' not in var.op.name:
       # Remove the parent scope prefix.
       name_in_ckpt = var.op.name.replace(resnet_scope, 'resnet_model/')
       assignment_map[name_in_ckpt] = var
-  tf.train.init_from_checkpoint(checkpoint, assignment_map)
+  tf.compat.v1.train.init_from_checkpoint(checkpoint, assignment_map)

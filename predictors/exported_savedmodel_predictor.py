@@ -26,7 +26,7 @@ import gin
 import numpy as np
 from tensor2robot.predictors import abstract_predictor
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 
 _BUSY_WAITING_SLEEP_TIME_IN_SECS = 10
@@ -34,10 +34,10 @@ _BUSY_WAITING_SLEEP_TIME_IN_SECS = 10
 
 @gin.configurable
 def create_tf_config(per_process_gpu_memory_fraction):
-  tf_config = tf.ConfigProto()
+  tf_config = tf.compat.v1.ConfigProto()
   if per_process_gpu_memory_fraction is not None:
     tf_config.gpu_options.CopyFrom(
-        tf.GPUOptions(
+        tf.compat.v1.GPUOptions(
             per_process_gpu_memory_fraction=per_process_gpu_memory_fraction))
   return tf_config
 
@@ -247,7 +247,7 @@ class ExportedSavedModelPredictor(abstract_predictor.AbstractPredictor):
         self._predict_fn = contrib_predictor.from_saved_model(
             model_dir, config=self._tf_config)
         model_global_step = self._predict_fn.session.run(
-            self._predict_fn.graph.get_collection(tf.GraphKeys.GLOBAL_STEP))[0]
+            self._predict_fn.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_STEP))[0]
         if (model_global_step is not None and
             model_global_step != self._global_step):
           logging.warning(
@@ -335,7 +335,7 @@ class ExportedSavedModelPredictor(abstract_predictor.AbstractPredictor):
       model_dir_is_numeric = os.path.basename(model_dir).isdigit()
       model_exists = tf.io.gfile.exists(
           os.path.join(model_dir,
-                       tf.saved_model.constants.SAVED_MODEL_FILENAME_PB))
+                       tf.saved_model.SAVED_MODEL_FILENAME_PB))
 
       assets_exists = tf.io.gfile.exists(
           os.path.join(model_dir, tensorspec_utils.EXTRA_ASSETS_DIRECTORY))

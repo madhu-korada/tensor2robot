@@ -21,7 +21,7 @@ TODO(T2R_CONTRIBUTORS) - consider replacing with contrib version.
 import gin
 import numpy as np
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_probability as tfp
 
 
@@ -44,7 +44,7 @@ def BuildSpatialSoftmax(features, spatial_gumbel_softmax=False):
   """
   _, num_rows, num_cols, num_features = features.get_shape().as_list()
 
-  with tf.name_scope('SpatialSoftmax'):
+  with tf.compat.v1.name_scope('SpatialSoftmax'):
     # Create tensors for x and y positions, respectively
     x_pos = np.empty([num_rows, num_cols], np.float32)
     y_pos = np.empty([num_rows, num_cols], np.float32)
@@ -77,8 +77,8 @@ def BuildSpatialSoftmax(features, spatial_gumbel_softmax=False):
     x_output = tf.multiply(x_pos, softmax)
     y_output = tf.multiply(y_pos, softmax)
     # Sum per out_size x out_size
-    x_output = tf.reduce_sum(x_output, [1], keep_dims=True)
-    y_output = tf.reduce_sum(y_output, [1], keep_dims=True)
+    x_output = tf.reduce_sum(x_output, [1], keepdims=True)
+    y_output = tf.reduce_sum(y_output, [1], keepdims=True)
     # Concatenate x and y, and reshape.
     expected_feature_points = tf.reshape(
         tf.concat([x_output, y_output], 1), [-1, num_features*2])

@@ -27,7 +27,7 @@ from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.preprocessors import distortion
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 import tensorflow_probability as tfp
 from tensorflow.contrib import layers as contrib_layers
 
@@ -120,7 +120,7 @@ class DefaultVRGripperPreprocessor(abstract_preprocessor.AbstractPreprocessor):
       out_feature_spec = self.get_out_feature_specification(mode)
       if out_feature_spec.image.shape != features.image.shape:
         features.image = meta_tfdata.multi_batch_apply(
-            tf.image.resize_images, 2, features.image,
+            tf.image.resize, 2, features.image,
             out_feature_spec.image.shape.as_list()[-3:-1])
 
     if self._mixup_alpha > 0. and labels and mode == TRAIN:
@@ -228,11 +228,11 @@ class VRGripperRegressionModel(regression_model.RegressionModel):
                            scope,
                            mode,
                            context_fn=None,
-                           reuse=tf.AUTO_REUSE):
+                           reuse=tf.compat.v1.AUTO_REUSE):
     """A state -> action regression function that expects a single batch dim."""
     gripper_pose = features.gripper_pose if self._use_gripper_input else None
-    with tf.variable_scope(scope, reuse=reuse, use_resource=True):
-      with tf.variable_scope('state_features', reuse=reuse, use_resource=True):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
+      with tf.compat.v1.variable_scope('state_features', reuse=reuse, use_resource=True):
         feature_points, end_points = vision_layers.BuildImagesToFeaturesModel(
             features.image,
             is_training=(mode == TRAIN),
@@ -275,7 +275,7 @@ class VRGripperRegressionModel(regression_model.RegressionModel):
              scope,
              mode,
              context_fn=None,
-             reuse=tf.AUTO_REUSE,
+             reuse=tf.compat.v1.AUTO_REUSE,
              config=None,
              params=None):
     """A (state) regression function.
@@ -318,7 +318,7 @@ class VRGripperRegressionModel(regression_model.RegressionModel):
           self._output_mean if self._normalize_outputs else None)
       return -tf.reduce_mean(gm.log_prob(labels.action))
     else:
-      return self._outer_loss_multiplier * tf.losses.mean_squared_error(
+      return self._outer_loss_multiplier * tf.compat.v1.losses.mean_squared_error(
           labels=labels.action,
           predictions=inference_outputs['inference_output'])
 
@@ -351,9 +351,9 @@ class VRGripperDomainAdaptiveModel(VRGripperRegressionModel):
   def _predict_gripper_pose(self, feature_points):
     """Predict the condition gripper pose from feature points."""
     out = feature_points
-    out = tf.layers.dense(out, 40, activation=tf.nn.relu, use_bias=False)
+    out = tf.compat.v1.layers.dense(out, 40, activation=tf.nn.relu, use_bias=False)
     out = contrib_layers.layer_norm(out)
-    out = tf.layers.dense(out, 14, activation=None)
+    out = tf.compat.v1.layers.dense(out, 14, activation=None)
     return out
 
   def single_batch_a_func(
@@ -364,8 +364,8 @@ class VRGripperDomainAdaptiveModel(VRGripperRegressionModel):
       params):
     """Single step action predictor when there is a single batch dim."""
     del config
-    with tf.variable_scope(scope, reuse=reuse, use_resource=True):
-      with tf.variable_scope('state_features', reuse=reuse, use_resource=True):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
+      with tf.compat.v1.variable_scope('state_features', reuse=reuse, use_resource=True):
         feature_points, end_points = vision_layers.BuildImagesToFeaturesModel(
             features.image,
             is_training=(mode == TRAIN),
@@ -397,7 +397,7 @@ class VRGripperDomainAdaptiveModel(VRGripperRegressionModel):
              scope,
              mode,
              context_fn = None,
-             reuse=tf.AUTO_REUSE,
+             reuse=tf.compat.v1.AUTO_REUSE,
              config = None,
              params = None
             ):
@@ -419,15 +419,15 @@ class VRGripperDomainAdaptiveModel(VRGripperRegressionModel):
       # Outer loss case: use standard RegressionModel loss.
       return self.loss_fn(labels, inference_outputs, mode, params)
     # Inner loss case: compute learned loss function.
-    with tf.variable_scope(
-        'learned_loss', reuse=tf.AUTO_REUSE, use_resource=True):
+    with tf.compat.v1.variable_scope(
+        'learned_loss', reuse=tf.compat.v1.AUTO_REUSE, use_resource=True):
       predicted_action, _ = meta_tfdata.multi_batch_apply(
           vision_layers.BuildImageFeaturesToPoseModel,
           2,
           inference_outputs['feature_points'],
           num_outputs=self._action_size)
       if self._learned_loss_conv1d_layers is None:
-        return tf.losses.mean_squared_error(predicted_action,
+        return tf.compat.v1.losses.mean_squared_error(predicted_action,
                                             inference_outputs['action'])
       ll_input = tf.concat([
           predicted_action, inference_outputs['feature_points'],
@@ -435,9 +435,9 @@ class VRGripperDomainAdaptiveModel(VRGripperRegressionModel):
       ], -1)
       net = ll_input
       for num_filters in self._learned_loss_conv1d_layers[:-1]:
-        net = tf.layers.conv1d(
+        net = tf.compat.v1.layers.conv1d(
             net, num_filters, 10, activation=tf.nn.relu, use_bias=False)
         net = contrib_layers.layer_norm(net)
-      net = tf.layers.conv1d(net, self._learned_loss_conv1d_layers[-1],
+      net = tf.compat.v1.layers.conv1d(net, self._learned_loss_conv1d_layers[-1],
                              1)  # 1x1 convolution.
       return tf.reduce_mean(tf.reduce_sum(tf.square(net), axis=(1, 2)))

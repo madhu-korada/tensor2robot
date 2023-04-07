@@ -25,7 +25,7 @@ import gin
 import numpy as np
 import six
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 @gin.configurable
@@ -99,7 +99,7 @@ def run_meta_env(env,
   summary_writer = None
   if root_dir and write_tf_summary:
     summary_dir = os.path.join(root_dir, 'live_eval_%d' % task)
-    summary_writer = tf.summary.FileWriter(summary_dir)
+    summary_writer = tf.compat.v1.summary.FileWriter(summary_dir)
 
   for task_idx in range(num_tasks):
     if hasattr(policy, 'reset_task'):
@@ -197,7 +197,7 @@ def run_meta_env(env,
           episode_data.append((obs, action, rew, new_obs, done, debug))
           obs = new_obs
           if done:
-            tf.logging.info(
+            tf.compat.v1.logging.info(
                 'Step %d episode %d reward: %f',
                 step_num, ep, episode_reward)
             # Record reward.
@@ -211,12 +211,12 @@ def run_meta_env(env,
         condition_data.append(episode_data)
     avg_ep_rew_in_task = np.mean(
         task_step_rewards[task_idx][num_adaptations_per_task-1])
-    tf.logging.info(
+    tf.compat.v1.logging.info(
         'Task %d avg reward: %f',
         task_idx, avg_ep_rew_in_task)
     # if task_family is not None:
     #   task_rewards_by_family[task_family].append(avg_ep_rew_in_task)
-    tf.logging.info('Average Task reward: %f', avg_ep_rew_in_task)
+    tf.compat.v1.logging.info('Average Task reward: %f', avg_ep_rew_in_task)
 
     if replay_writer:
       replay_writer.close()
@@ -230,7 +230,7 @@ def run_meta_env(env,
       step_rewards = [
           np.mean(task_step_rewards[t][step_num]) for t in range(num_tasks)]
       # Reward averaged across tasks for this step.
-      summary_values.append(tf.Summary.Value(
+      summary_values.append(tf.compat.v1.Summary.Value(
           tag='%s/step_%d_reward' % (tag, step_num),
           simple_value=np.mean(step_rewards)
       ))
@@ -240,18 +240,18 @@ def run_meta_env(env,
             [np.array(task_step_rewards[t][step_num]) -
              np.array(task_step_rewards[t][step_num-1])
              for t in range(num_tasks)])
-        summary_values.append(tf.Summary.Value(
+        summary_values.append(tf.compat.v1.Summary.Value(
             tag='%s/step_%d_improvement' % (tag, step_num),
             simple_value=delta))
 
     for step, q_values in episode_q_values.items():
-      summary_values.append(tf.Summary.Value(tag='%s/Q/%d' % (tag, step),
+      summary_values.append(tf.compat.v1.Summary.Value(tag='%s/Q/%d' % (tag, step),
                                              simple_value=np.mean(q_values)))
     for task_family, step_rewards in task_family_step_rewards.items():
       # Reward on the last adaptation step.
       rewards = step_rewards[num_adaptations_per_task-1]
-      summary_values.append(tf.Summary.Value(
+      summary_values.append(tf.compat.v1.Summary.Value(
           tag='%s/task_family_%d_reward' % (tag, task_family),
           simple_value=np.mean(rewards)))
-    summary = tf.Summary(value=summary_values)
+    summary = tf.compat.v1.Summary(value=summary_values)
     summary_writer.add_summary(summary, global_step)

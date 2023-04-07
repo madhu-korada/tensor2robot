@@ -30,9 +30,9 @@ from tensor2robot.models import abstract_model
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.utils import tensorspec_utils as utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
-from tensorflow.contrib import training as contrib_training
-
+import tensorflow as tf  # tf
+# from tensorflow.contrib import training as contrib_training
+import tf_slim as slim  # tf_slim
 
 # pylint: disable=invalid-name
 MAMLPreprocessorType = TypeVar(
@@ -162,7 +162,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
     """
     dtype_inference_graph = tf.Graph()
     with dtype_inference_graph.as_default():
-      with tf.variable_scope('IGNORE_ONLY_TO_INFER_OUTPUT_DTYPES'):
+      with tf.compat.v1.variable_scope('IGNORE_ONLY_TO_INFER_OUTPUT_DTYPES'):
         # In this graph we can now create placeholders in order to infer the
         # right dtype of the outputs.
         feature_spec = self.get_feature_specification(mode)
@@ -308,7 +308,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
     if self.use_summaries(params):
       maml_inner_loop_instance.add_parameter_summaries()
       for index, inner_loss_step in enumerate(inner_loss):
-        tf.summary.scalar('inner_loss_{}'.format(index),
+        tf.compat.v1.summary.scalar('inner_loss_{}'.format(index),
                           tf.reduce_mean(inner_loss_step))
 
     # Note, this is the first iteration output and loss, prior to any
@@ -336,11 +336,11 @@ class MAMLModel(abstract_model.AbstractT2RModel):
         utils.TensorSpecStruct(list(conditioned_inference_output.items())))
     if self.use_summaries(params):
       for key, inference in predictions.items():
-        tf.summary.histogram(key, inference)
+        tf.compat.v1.summary.histogram(key, inference)
       for key in unconditioned_inference_output.keys():
         delta = (conditioned_inference_output[key] -
                  unconditioned_inference_output[key])
-        tf.summary.histogram('delta/{}'.format(key), delta)
+        tf.compat.v1.summary.histogram('delta/{}'.format(key), delta)
 
     predictions = self._select_inference_output(predictions)
     if 'condition_output' not in predictions:
@@ -394,7 +394,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
     Returns:
       train_op: Op for the training step.
     """
-    vars_to_train = tf.trainable_variables()
+    vars_to_train = tf.compat.v1.trainable_variables()
     if self._var_scope is not None:
       vars_to_train = [
           v for v in vars_to_train if v.op.name.startswith(self._var_scope)]
@@ -405,7 +405,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
       if self._summarize_gradients:
         logging.info('We cannot use summarize_gradients on TPUs.')
       summarize_gradients = False
-    return contrib_training.create_train_op(
+    return slim.learning.create_train_op(
         loss,
         optimizer,
         variables_to_train=vars_to_train,
@@ -453,7 +453,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
       condition_output_flat_batch = meta_tfdata.flatten_batch_examples(
           inference_outputs['full_condition_outputs/output_{}'.format(
               inner_loop_step)])
-      with tf.variable_scope('inner_loop_step_{}'.format(inner_loop_step)):
+      with tf.compat.v1.variable_scope('inner_loop_step_{}'.format(inner_loop_step)):
         self._base_model.add_summaries(
             features=condition_features_flat_batch,
             labels=condition_labels_flat_batch,
@@ -472,7 +472,7 @@ class MAMLModel(abstract_model.AbstractT2RModel):
         features.inference.features)
     labels_flat_batch = meta_tfdata.flatten_batch_examples(labels)
 
-    with tf.variable_scope('unconditioned_inference'):
+    with tf.compat.v1.variable_scope('unconditioned_inference'):
       uncondition_output_flat_batch = meta_tfdata.flatten_batch_examples(
           inference_outputs.full_inference_output_unconditioned)
       self._base_model.add_summaries(

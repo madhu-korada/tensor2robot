@@ -16,7 +16,7 @@
 """Tests for tensor2robot.layers.tec."""
 
 from tensor2robot.layers import tec
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class TECTest(tf.test.TestCase):

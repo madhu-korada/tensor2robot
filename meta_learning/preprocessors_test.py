@@ -24,7 +24,7 @@ from six.moves import range
 from tensor2robot.meta_learning import preprocessors
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.utils import tensorspec_utils as utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 from tensorflow.contrib import framework as contrib_framework
 
@@ -97,9 +97,9 @@ class MockBasePreprocessor(abstract_preprocessor.AbstractPreprocessor):
   def _preprocess_fn(self, features, labels, mode):
     features.original_image = tf.image.convert_image_dtype(
         features.image, tf.float32)
-    features.image = tf.image.resize_bilinear(
+    features.image = tf.image.resize(
         features.original_image,
-        size=self.get_out_feature_specification(mode).image.shape[:2])
+        method=tf.image.ResizeMethod.BILINEAR, size=self.get_out_feature_specification(mode).image.shape[:2])
     return features, labels
 
 
@@ -198,8 +198,8 @@ class PreprocessorsTest(tf.test.TestCase, parameterized.TestCase):
       map_fn = maml_preprocessor.create_meta_map_fn(
           num_condition_samples_per_task, num_inference_samples_per_task)
       dataset = dataset.map(map_func=map_fn, num_parallel_calls=1)
-      raw_meta_features, raw_meta_labels = dataset.make_one_shot_iterator(
-      ).get_next()
+      raw_meta_features, raw_meta_labels = tf.compat.v1.data.make_one_shot_iterator(
+      dataset).get_next()
 
       np_raw_meta_features, np_raw_meta_labels = sess.run(
           [raw_meta_features, raw_meta_labels])
@@ -257,8 +257,8 @@ class PreprocessorsTest(tf.test.TestCase, parameterized.TestCase):
           maml_preprocessor.preprocess, mode=tf_estimator.ModeKeys.TRAIN)
       dataset = dataset.map(map_func=preprocess_fn, num_parallel_calls=1)
 
-      raw_meta_features, raw_meta_labels = dataset.make_one_shot_iterator(
-      ).get_next()
+      raw_meta_features, raw_meta_labels = tf.compat.v1.data.make_one_shot_iterator(
+      dataset).get_next()
 
       np_raw_meta_features, np_raw_meta_labels = sess.run(
           [raw_meta_features, raw_meta_labels])
@@ -400,7 +400,7 @@ class PreprocessorsTest(tf.test.TestCase, parameterized.TestCase):
       dataset = dataset.map(map_func=preprocess_fn, num_parallel_calls=1)
 
       raw_meta_features, raw_meta_labels = (
-          dataset.make_one_shot_iterator().get_next())
+          tf.compat.v1.data.make_one_shot_iterator(dataset).get_next())
       np_raw_meta_features, np_raw_meta_labels = sess.run(
           [raw_meta_features, raw_meta_labels])
       ref_features, ref_labels = mock_tensors

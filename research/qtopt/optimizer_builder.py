@@ -17,7 +17,7 @@
 """
 
 from absl import logging
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import opt as contrib_opt
 from tensorflow.contrib.tpu.python.tpu import tpu_function
 
@@ -56,31 +56,31 @@ def BuildOpt(hparams):
   adam_epsilon = hparams.get('adam_epsilon', 1e-8)
   use_avg_model_params = hparams.use_avg_model_params
 
-  global_step = tf.train.get_or_create_global_step()
+  global_step = tf.compat.v1.train.get_or_create_global_step()
 
   # Configure the learning rate using an exponetial decay.
   decay_steps = int(examples_per_epoch / batch_size *
                     num_epochs_per_decay)
 
-  learning_rate = tf.train.exponential_decay(
+  learning_rate = tf.compat.v1.train.exponential_decay(
       learning_rate,
       global_step,
       decay_steps,
       learning_rate_decay_factor,
       staircase=True)
   if not tpu_function.get_tpu_context():
-    tf.summary.scalar('Learning Rate', learning_rate)
+    tf.compat.v1.summary.scalar('Learning Rate', learning_rate)
 
   if optimizer == 'momentum':
-    opt = tf.train.MomentumOptimizer(learning_rate, momentum)
+    opt = tf.compat.v1.train.MomentumOptimizer(learning_rate, momentum)
   elif optimizer == 'rmsprop':
-    opt = tf.train.RMSPropOptimizer(
+    opt = tf.compat.v1.train.RMSPropOptimizer(
         learning_rate,
         decay=rmsprop_decay,
         momentum=momentum,
         epsilon=rmsprop_epsilon)
   else:
-    opt = tf.train.AdamOptimizer(
+    opt = tf.compat.v1.train.AdamOptimizer(
         learning_rate,
         beta1=momentum,
         beta2=adam_beta2,

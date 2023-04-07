@@ -23,7 +23,7 @@ from tensor2robot.input_generators import abstract_input_generator
 from tensor2robot.models import abstract_model
 from tensor2robot.utils import tensorspec_utils
 from tensor2robot.utils import tfdata
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 SEED = 1234
@@ -163,14 +163,14 @@ class MockT2RModel(abstract_model.AbstractT2RModel):
 
       # Note, we have to add the MockTFModel name in order to support legacy
       # model loading.
-      net = tf.layers.dense(
+      net = tf.compat.v1.layers.dense(
           net,
           units=activations,
           activation=tf.nn.elu,
           name='MockT2RModel.dense.{}'.format(pos))
-      net = tf.layers.batch_normalization(
+      net = tf.compat.v1.layers.batch_normalization(
           net, name='MockT2RModel.batch_norm.{}'.format(pos))
-    net = tf.layers.dense(net, units=1, name='MockT2RModel.dense.4')
+    net = tf.compat.v1.layers.dense(net, units=1, name='MockT2RModel.dense.4')
     inference_outputs = {}
     inference_outputs['logit'] = net
     return inference_outputs

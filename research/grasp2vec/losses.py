@@ -20,7 +20,7 @@ Implements several loss functions for training models.
 
 import gin
 from six.moves import range
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 from tf_slim import losses as slim_losses
 
 from tensorflow.contrib import layers as contrib_layers
@@ -98,8 +98,8 @@ def CosineArithmeticLoss(pregrasp_embedding, goal_embedding,
   def _ComputeLoss():
     pair_a = tf.nn.l2_normalize(pregrasp_embedding-postgrasp_embedding, axis=1)
     pair_b = tf.nn.l2_normalize(goal_embedding, axis=1)
-    distances = tf.losses.cosine_distance(
-        pair_a, pair_b, axis=1, reduction=tf.losses.Reduction.NONE)
+    distances = tf.compat.v1.losses.cosine_distance(
+        pair_a, pair_b, axis=1, reduction=tf.compat.v1.losses.Reduction.NONE)
     _, mask1_data = tf.dynamic_partition(distances, mask, 2)
     loss = tf.cast(tf.reduce_mean(mask1_data), tf.float32)
     return loss
@@ -180,8 +180,8 @@ def NPairsLoss(pregrasp_embedding, goal_embedding, postgrasp_embedding,
   labels = tf.range(pregrasp_embedding.shape[0], dtype=tf.int32)
   loss_1 = slim_losses.metric_learning.npairs_loss(labels, pair_a, pair_b)
   loss_2 = slim_losses.metric_learning.npairs_loss(labels, pair_b, pair_a)
-  tf.summary.scalar('npairs_loss1', loss_1)
-  tf.summary.scalar('npairs_loss2', loss_2)
+  tf.compat.v1.summary.scalar('npairs_loss1', loss_1)
+  tf.compat.v1.summary.scalar('npairs_loss2', loss_2)
   return loss_1+loss_2
 
 
@@ -214,8 +214,8 @@ def NPairsLossMultilabel(pregrasp_embedding, goal_embedding,
   loss_2 = slim_losses.metric_learning.npairs_loss_multilabel(
       sparse_labels, pair_b, pair_a)
 
-  tf.summary.scalar('npairs_loss1', loss_1)
-  tf.summary.scalar('npairs_loss2', loss_2)
+  tf.compat.v1.summary.scalar('npairs_loss1', loss_1)
+  tf.compat.v1.summary.scalar('npairs_loss2', loss_2)
   return loss_1+loss_2
 
 
@@ -232,7 +232,7 @@ def MatchNormsLoss(anchor_tensors, paired_tensors):
   """
   anchor_norms = tf.stop_gradient(tf.norm(anchor_tensors, axis=1))
   paired_norms = tf.norm(paired_tensors, axis=1)
-  tf.summary.histogram('norms_difference', tf.nn.l2_loss(anchor_norms
+  tf.compat.v1.summary.histogram('norms_difference', tf.nn.l2_loss(anchor_norms
                                                          -paired_norms))
   loss = tf.reduce_mean(tf.nn.l2_loss(anchor_norms-paired_norms))
   return loss
@@ -258,7 +258,7 @@ def _GetSoftMaxResponse(goal_embedding, scene_spatial):
   reshaped_query = tf.reshape(goal_embedding, (int(batch), 1, 1, int(dim)))
   scene_heatmap = tf.reduce_sum(tf.multiply(scene_spatial,
                                             reshaped_query), axis=3,
-                                keep_dims=True)
+                                keepdims=True)
   scene_heatmap_flat = tf.reshape(scene_heatmap, (batch, -1))
   max_heat = tf.reduce_max(scene_heatmap_flat, axis=1)
   scene_softmax = tf.nn.softmax(scene_heatmap_flat, axis=1)

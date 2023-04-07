@@ -26,7 +26,7 @@ import numpy as np
 import PIL.Image as Image
 import six
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tf_agents.trajectories import time_step as ts
 
 
@@ -180,7 +180,7 @@ def _run_env(env,
                                  'gs%d_t%d_%s' % (global_step, task, timestamp))
   if root_dir and task == 0:
     summary_dir = os.path.join(root_dir, 'live_eval_%d' % task)
-    summary_writer = tf.summary.FileWriter(summary_dir)
+    summary_writer = tf.compat.v1.summary.FileWriter(summary_dir)
 
   if replay_writer:
     replay_writer.open(record_prefix)
@@ -206,16 +206,16 @@ def _run_env(env,
       episode_data.append((obs, action, rew, new_obs, done, env_debug))
       obs = new_obs
       if done:
-        tf.logging.info('Episode %d reward: %f' % (ep, episode_reward))
+        tf.compat.v1.logging.info('Episode %d reward: %f' % (ep, episode_reward))
         episode_rewards.append(episode_reward)
         if replay_writer:
           transitions = episode_to_transitions_fn(episode_data)
           replay_writer.write(transitions)
     if episode_rewards and len(episode_rewards) % 10 == 0:
-      tf.logging.info('Average %d collect episodes reward: %f' %
+      tf.compat.v1.logging.info('Average %d collect episodes reward: %f' %
                       (len(episode_rewards), np.mean(episode_rewards)))
 
-  tf.logging.info('Closing environment.')
+  tf.compat.v1.logging.info('Closing environment.')
   env.close()
 
   if replay_writer:
@@ -223,13 +223,13 @@ def _run_env(env,
 
   if root_dir and task == 0:
     summary_values = [
-        tf.Summary.Value(
+        tf.compat.v1.Summary.Value(
             tag='%s/episode_reward' % tag,
             simple_value=np.mean(episode_rewards))
     ]
     for step, q_values in episode_q_values.items():
       summary_values.append(
-          tf.Summary.Value(
+          tf.compat.v1.Summary.Value(
               tag='%s/Q/%d' % (tag, step), simple_value=np.mean(q_values)))
-    summary = tf.Summary(value=summary_values)
+    summary = tf.compat.v1.Summary(value=summary_values)
     summary_writer.add_summary(summary, global_step)

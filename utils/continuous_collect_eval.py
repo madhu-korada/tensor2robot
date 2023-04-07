@@ -21,7 +21,7 @@ from typing import Text
 
 import gin
 import gym
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 @gin.configurable
@@ -102,7 +102,7 @@ def collect_eval_loop(
       run_agent_fn(eval_env, policy=policy, num_episodes=num_eval,
                    root_dir=eval_dir, global_step=global_step, tag='eval')
     if not continuous or global_step >= max_steps:
-      tf.logging.info('Completed collect/eval on final ckpt.')
+      tf.compat.v1.logging.info('Completed collect/eval on final ckpt.')
       break
 
     prev_global_step = global_step

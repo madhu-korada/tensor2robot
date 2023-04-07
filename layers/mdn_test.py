@@ -18,7 +18,7 @@
 from absl.testing import parameterized
 import numpy as np
 from tensor2robot.layers import mdn
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import tensorflow_probability as tfp
 
 
@@ -52,7 +52,7 @@ class MDNTest(tf.test.TestCase, parameterized.TestCase):
     sample_size = 10
     num_alphas = 5
     inputs = tf.random.normal((2, 16))
-    with tf.variable_scope('test_scope'):
+    with tf.compat.v1.variable_scope('test_scope'):
       dist_params = mdn.predict_mdn_params(
           inputs, num_alphas, sample_size, condition_sigmas=condition_sigmas)
     expected_num_params = num_alphas * (1 + 2 * sample_size)
@@ -61,7 +61,7 @@ class MDNTest(tf.test.TestCase, parameterized.TestCase):
     gm = mdn.get_mixture_distribution(dist_params, num_alphas, sample_size)
     stddev = gm.components_distribution.stddev()
     with self.test_session() as sess:
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       stddev_np = sess.run(stddev)
       if condition_sigmas:
         # Standard deviations should vary with input.

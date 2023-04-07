@@ -26,7 +26,7 @@ from tensor2robot.predictors import ensemble_exported_savedmodel_predictor
 from tensor2robot.utils import mocks
 from tensor2robot.utils import tensorspec_utils
 from tensor2robot.utils import train_eval
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 FLAGS = flags.FLAGS

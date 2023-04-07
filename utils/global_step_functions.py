@@ -20,7 +20,7 @@ from typing import Optional, Sequence, Text, Union
 
 import gin
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 @gin.configurable
@@ -48,8 +48,8 @@ def piecewise_linear(boundaries,
   Raises:
     AssertionError: if values or boundaries is empty, or not the same size.
   """
-  global_step = tf.train.get_or_create_global_step()
-  with tf.name_scope(name, 'PiecewiseLinear', [global_step, boundaries, values,
+  global_step = tf.compat.v1.train.get_or_create_global_step()
+  with tf.compat.v1.name_scope(name, 'PiecewiseLinear', [global_step, boundaries, values,
                                                name]) as name:
     values = tf.convert_to_tensor(values)
     x = tf.cast(tf.convert_to_tensor(global_step), values.dtype)
@@ -77,7 +77,7 @@ def piecewise_linear(boundaries,
 
     # Identify index of the last boundary that was passed.
     unreached_boundaries = tf.reshape(
-        tf.where(tf.greater(boundaries, x)), [-1])
+        tf.compat.v1.where(tf.greater(boundaries, x)), [-1])
     unreached_boundaries = tf.concat(
         [unreached_boundaries, [tf.cast(tf.size(boundaries), tf.int64)]], 0)
     index = tf.reshape(tf.reduce_min(unreached_boundaries), [1])
@@ -113,7 +113,7 @@ def exponential_decay(initial_value = 0.0001,
   Returns:
     value: Scalar tf.Tensor with the value decaying based on the global_step.
   """
-  global_step = tf.train.get_or_create_global_step()
+  global_step = tf.compat.v1.train.get_or_create_global_step()
   value = tf.compat.v1.train.exponential_decay(
       learning_rate=initial_value,
       global_step=global_step,

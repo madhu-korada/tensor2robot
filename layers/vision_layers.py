@@ -20,10 +20,12 @@ Colloquially referred to as 'Berkeley-Net'.
 import gin
 from six.moves import range
 from tensor2robot.layers import spatial_softmax
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim as contrib_slim
+import tensorflow as tf
+# from tensorflow.contrib import slim as contrib_slim
+# slim = contrib_slim
 
-slim = contrib_slim
+import tf_slim as slim
+
 
 
 @gin.configurable
@@ -122,9 +124,9 @@ def BuildImagesToFeaturesModel(images,
   with slim.arg_scope([slim.conv2d], padding='VALID'):
     with slim.arg_scope(
         [slim.conv2d],
-        weights_initializer=slim.xavier_initializer(),
-        weights_regularizer=slim.l2_regularizer(weight_regularization),
-        biases_initializer=tf.constant_initializer(0.01),
+        weights_initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"),
+        weights_regularizer=tf.keras.regularizers.l2(0.5 * (weight_regularization)),
+        biases_initializer=tf.compat.v1.constant_initializer(0.01),
         normalizer_fn=normalizer_fn,
         normalizer_params=normalizer_params):
       for i in range(num_blocks):
@@ -235,8 +237,8 @@ def BuildImagesToFeaturesModelHighRes(images,
   with slim.arg_scope([slim.conv2d, slim.avg_pool2d], padding='VALID'):
     with slim.arg_scope(
         [slim.conv2d],
-        weights_initializer=tf.truncated_normal_initializer(stddev=0.1),
-        weights_regularizer=slim.l2_regularizer(weight_regularization),
+        weights_initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.1),
+        weights_regularizer=tf.keras.regularizers.l2(0.5 * (weight_regularization)),
         normalizer_fn=normalizer_fn,
         normalizer_params=normalizer_params):
       block_outs = []
@@ -259,7 +261,7 @@ def BuildImagesToFeaturesModelHighRes(images,
       final_image_shape = block_outs[0].get_shape().as_list()[1:3]
 
       def ResizeLayerToImage(layer):
-        return tf.image.resize_images(
+        return tf.image.resize(
             layer, [final_image_shape[0], final_image_shape[1]],
             tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
@@ -314,12 +316,12 @@ def BuildImageFeaturesToPoseModel(expected_feature_points,
     net = tf.concat([expected_feature_points, aux_input], 1)
   else:
     net = expected_feature_points
-  bias_init = tf.constant_initializer(0.01)
+  bias_init = tf.compat.v1.constant_initializer(0.01)
 
   with slim.arg_scope(
       [slim.fully_connected],
       biases_initializer=bias_init,
-      weights_initializer=tf.truncated_normal_initializer(stddev=0.01)):
+      weights_initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.01)):
 
     # Add bias transformation variable.
     if bias_transform_size > 0:

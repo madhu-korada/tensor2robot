@@ -17,7 +17,7 @@
 
 from absl.testing import parameterized
 from tensor2robot.utils import global_step_functions
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class GlobalStepFunctionsTest(parameterized.TestCase, tf.test.TestCase):
@@ -37,12 +37,12 @@ class GlobalStepFunctionsTest(parameterized.TestCase, tf.test.TestCase):
   })
   def test_piecewise_linear(self, boundaries, values, test_inputs,
                             expected_outputs):
-    global_step = tf.train.get_or_create_global_step()
-    global_step_value = tf.placeholder(tf.int64, [])
-    set_global_step = tf.assign(global_step, global_step_value)
+    global_step = tf.compat.v1.train.get_or_create_global_step()
+    global_step_value = tf.compat.v1.placeholder(tf.int64, [])
+    set_global_step = tf.compat.v1.assign(global_step, global_step_value)
 
     test_function = global_step_functions.piecewise_linear(boundaries, values)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       for x, y_expected in zip(test_inputs, expected_outputs):
         sess.run(set_global_step, {global_step_value: x})
         y = sess.run(test_function)
@@ -51,7 +51,7 @@ class GlobalStepFunctionsTest(parameterized.TestCase, tf.test.TestCase):
     # Test the same with tensors as inputs
     test_function = global_step_functions.piecewise_linear(
         tf.convert_to_tensor(boundaries), tf.convert_to_tensor(values))
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       for x, y_expected in zip(test_inputs, expected_outputs):
         sess.run(set_global_step, {global_step_value: x})
         y = sess.run(test_function)

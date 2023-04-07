@@ -23,7 +23,7 @@ import numpy as np
 import six
 from six.moves import range
 from six.moves import zip
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.contrib import layers as contrib_layers
 
 try:
@@ -53,7 +53,7 @@ def plot_labels(labels, max_label=1, predictions=None, name=''):
     pred_image = tf.reshape(predictions[:3], (1, 3, 4, 1))
     image2 = tf.concat([empty_image, pred_image, empty_image], axis=-1)
     image = tf.concat([image, image2], axis=1)
-  tf.summary.image('labels_' + six.ensure_str(name), image, max_outputs=1)
+  tf.compat.v1.summary.image('labels_' + six.ensure_str(name), image, max_outputs=1)
 
 
 def plot_distances(pregrasp, goal, postgrasp):
@@ -61,17 +61,17 @@ def plot_distances(pregrasp, goal, postgrasp):
   correct_distances = tf.norm(pregrasp - (goal + postgrasp), axis=1)
   incorrect_distances = tf.norm(pregrasp - pregrasp[::-1], axis=1)
   goal_distances = tf.norm(goal - goal[::-1], axis=1)
-  tf.summary.histogram('correct_distances', correct_distances)
-  tf.summary.histogram('goal_distances', goal_distances)
-  tf.summary.histogram('incorrect_distances', incorrect_distances)
-  tf.summary.histogram('pregrasp_sizes', tf.norm(pregrasp, axis=1))
-  tf.summary.histogram('postgrasp_sizes', tf.norm(postgrasp, axis=1))
-  tf.summary.histogram('goal_sizes', tf.norm(goal, axis=1))
+  tf.compat.v1.summary.histogram('correct_distances', correct_distances)
+  tf.compat.v1.summary.histogram('goal_distances', goal_distances)
+  tf.compat.v1.summary.histogram('incorrect_distances', incorrect_distances)
+  tf.compat.v1.summary.histogram('pregrasp_sizes', tf.norm(pregrasp, axis=1))
+  tf.compat.v1.summary.histogram('postgrasp_sizes', tf.norm(postgrasp, axis=1))
+  tf.compat.v1.summary.histogram('goal_sizes', tf.norm(goal, axis=1))
   # Cosine similarity metric between adjacent minibatch elements.
-  goal_normalized = goal / (1e-7 + tf.norm(goal, axis=1, keep_dims=True))
+  goal_normalized = goal / (1e-7 + tf.norm(goal, axis=1, keepdims=True))
   similarity = tf.reduce_sum(
       goal_normalized[:-1] * goal_normalized[1:], axis=1)
-  tf.summary.histogram('goal_cosine_similarity', similarity)
+  tf.compat.v1.summary.histogram('goal_cosine_similarity', similarity)
 
 
 def add_heatmap_summary(feature_query, feature_map, name):
@@ -87,11 +87,11 @@ def add_heatmap_summary(feature_query, feature_map, name):
   batch, dim = feature_query.shape
   reshaped_query = tf.reshape(feature_query, (int(batch), 1, 1, int(dim)))
   heatmaps = tf.reduce_sum(
-      tf.multiply(feature_map, reshaped_query), axis=3, keep_dims=True)
-  tf.summary.image(name, heatmaps)
+      tf.multiply(feature_map, reshaped_query), axis=3, keepdims=True)
+  tf.compat.v1.summary.image(name, heatmaps)
   shape = tf.shape(heatmaps)
   softmaxheatmaps = tf.nn.softmax(tf.reshape(heatmaps, (int(batch), -1)))
-  tf.summary.image(
+  tf.compat.v1.summary.image(
       six.ensure_str(name) + 'softmax', tf.reshape(softmaxheatmaps, shape))
   return heatmaps
 
@@ -174,18 +174,18 @@ def add_spatial_soft_argmax_viz(image,
     num_rows: Number of rows per softmax layer visualization.
   """
   # Compute batch histogram summaries for mean x, y.
-  tf.summary.histogram('x', locations[:, :, 0])
-  tf.summary.histogram('y', locations[:, :, 1])
+  tf.compat.v1.summary.histogram('x', locations[:, :, 0])
+  tf.compat.v1.summary.histogram('y', locations[:, :, 1])
 
   # Average softmax maps.
-  softmax_avg_channel = tf.reduce_mean(softmax, 3, keep_dims=True)
-  tf.summary.image('SpatialSoftmax/softmax_avg', softmax_avg_channel)
+  softmax_avg_channel = tf.reduce_mean(softmax, 3, keepdims=True)
+  tf.compat.v1.summary.image('SpatialSoftmax/softmax_avg', softmax_avg_channel)
 
   # Overlay of soft argmax locations on image.
-  softmax_keypoints_image = tf.py_func(np_render_keypoints,
+  softmax_keypoints_image = tf.compat.v1.py_func(np_render_keypoints,
                                        [image, locations, max_outputs],
                                        [tf.uint8])[0]
-  tf.summary.image(
+  tf.compat.v1.summary.image(
       'SpatialSoftmax/locations',
       softmax_keypoints_image,
       max_outputs=max_outputs)
@@ -193,10 +193,10 @@ def add_spatial_soft_argmax_viz(image,
   if num_groups > 1:
     channel_groups = tf.split(softmax, num_groups, axis=3)
     for i, channel_group in enumerate(channel_groups):
-      tf.summary.image('SpatialSoftmax/softmax_group_{}'.format(i),
+      tf.compat.v1.summary.image('SpatialSoftmax/softmax_group_{}'.format(i),
                        get_softmax_viz(image, channel_group, num_rows))
   else:
-    tf.summary.image('SpatialSoftmax/softmax',
+    tf.compat.v1.summary.image('SpatialSoftmax/softmax',
                      get_softmax_viz(image, softmax, num_rows))
 
 
@@ -213,8 +213,8 @@ def get_softmax_viz(image, softmax, nrows=None):
     num_points_float = tf.cast(num_points, tf.float32)
     nfsqrt = tf.cast(tf.floor(tf.sqrt(num_points_float)), tf.int32)
     divs = tf.range(1, nfsqrt + 1)
-    remainders = tf.mod(num_points_float, tf.cast(divs, tf.float32))
-    divs = tf.gather(divs, tf.where(tf.equal(remainders, 0)))
+    remainders = tf.math.floormod(num_points_float, tf.cast(divs, tf.float32))
+    divs = tf.gather(divs, tf.compat.v1.where(tf.equal(remainders, 0)))
     nrows = tf.reduce_max(divs)
   ncols = tf.cast(num_points / nrows, tf.int32)
   nrows = tf.cast(nrows, tf.int32)
@@ -222,11 +222,11 @@ def get_softmax_viz(image, softmax, nrows=None):
   img = softmax / tf.reduce_max(softmax, axis=[1, 2], keepdims=True)
   # Use softmax as hue and saturation and original image as value of HSV image.
   greyimg = tf.image.rgb_to_grayscale(image)
-  greyimg = tf.image.resize_images(greyimg, [target_height, target_width])
+  greyimg = tf.image.resize(greyimg, [target_height, target_width])
   greyimg = tf.tile(greyimg, [1, 1, 1, num_points])
   greyimg = tf.reshape(greyimg,
                        [batch_size, target_height, target_width, num_points, 1])
-  img = tf.image.resize_images(img, [target_height, target_width])
+  img = tf.image.resize(img, [target_height, target_width])
   img = tf.reshape(img,
                    [batch_size, target_height, target_width, num_points, 1])
   img = tf.concat([img / 2.0 + 0.5, img, greyimg * 0.7 + 0.3], axis=4)
@@ -260,4 +260,4 @@ def tf_put_text(imgs, texts, text_size=1, text_pos=(0, 30),
           cv2.FONT_HERSHEY_COMPLEX, text_size, text_color, 1)
     return result
 
-  return tf.py_func(_put_text, [imgs, texts], Tout=imgs.dtype)
+  return tf.compat.v1.py_func(_put_text, [imgs, texts], Tout=imgs.dtype)

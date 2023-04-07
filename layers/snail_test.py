@@ -18,7 +18,7 @@
 import numpy as np
 from six.moves import range
 from tensor2robot.layers import snail
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class SNAILTest(tf.test.TestCase):
@@ -42,7 +42,7 @@ class SNAILTest(tf.test.TestCase):
   def test_CausallyMaskedSoftmax(self):
     num_rows = 5
     x = tf.random.normal((num_rows, 3))
-    logits = tf.matmul(x, tf.linalg.transpose(x))
+    logits = tf.matmul(x, tf.linalg.matrix_transpose(x))
     y = snail.CausallyMaskedSoftmax(logits)
     with self.test_session() as sess:
       y_ = sess.run(y)

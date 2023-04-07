@@ -18,7 +18,7 @@
 from tensor2robot.meta_learning import meta_tf_models
 from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.utils import tensorspec_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class MockBasePreprocessor(abstract_preprocessor.AbstractPreprocessor):

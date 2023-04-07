@@ -19,8 +19,10 @@ from typing import Callable
 
 import gin
 import gin.tf
-import tensorflow.compat.v1 as tf  # tf
-from tensorflow.contrib import opt as contrib_opt
+import tensorflow as tf  # tf
+from tensorflow_addons import optimizers as contrib_opt  # pylint: disable=g-direct-tensorflow-import
+
+# from tensorflow.contrib import opt as contrib_opt
 
 
 @gin.configurable
@@ -61,8 +63,8 @@ def create_exp_decaying_learning_rate(initial_learning_rate = 0.0001,
 @gin.configurable
 def default_create_optimizer_fn(use_summaries, learning_rate=1e-4):
   if use_summaries:
-    tf.summary.scalar('learning_rate', learning_rate)
-  return tf.train.AdamOptimizer(learning_rate)
+    tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+  return tf.compat.v1.train.AdamOptimizer(learning_rate)
 
 
 @gin.configurable
@@ -73,8 +75,8 @@ def create_adam_optimizer(
     """Creates an Adam optimizer with an optional learning rate schedule."""
     learning_rate = learning_rate_fn()
     if use_summaries:
-      tf.summary.scalar('learning_rate', learning_rate)
-    return tf.train.AdamOptimizer(learning_rate=learning_rate)
+      tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+    return tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate)
 
   return create_optimizer_fn
 
@@ -97,8 +99,8 @@ def create_gradient_descent_optimizer(
     """Creates a gradient descent optimizer with an optional lr schedule."""
     learning_rate = learning_rate_fn()
     if use_summaries:
-      tf.summary.scalar('learning_rate', learning_rate)
-    return tf.train.GradientDescentOptimizer(
+      tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+    return tf.compat.v1.train.GradientDescentOptimizer(
         learning_rate=learning_rate)
 
   return create_optimizer_fn
@@ -122,8 +124,8 @@ def create_momentum_optimizer(
     """Creates a momentum optimizer with an optional learning rate schedule."""
     learning_rate = learning_rate_fn()
     if use_summaries:
-      tf.summary.scalar('learning_rate', learning_rate)
-    return tf.train.MomentumOptimizer(learning_rate=learning_rate,
+      tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+    return tf.compat.v1.train.MomentumOptimizer(learning_rate=learning_rate,
                                       momentum=momentum)
 
   return create_optimizer_fn

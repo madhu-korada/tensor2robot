@@ -23,7 +23,7 @@ from typing import Text, Callable, Optional, List
 
 from absl import logging
 import six
-import tensorflow.compat.v1 as tf  # tf
+import tensorflow as tf  # tf
 
 copy_fn = distutils.dir_util.copy_tree
 
@@ -48,7 +48,7 @@ class _DirectoryVersionGC(object):
       tf.io.gfile.rmtree(self._queue.popleft())
 
 
-class CheckpointExportListener(tf.train.CheckpointSaverListener):
+class CheckpointExportListener(tf.estimator.CheckpointSaverListener):
   """Listener that exports the model after creating a checkpoint.
 
   This is used to support Tensorflow serving for remote inference during
@@ -72,7 +72,7 @@ class CheckpointExportListener(tf.train.CheckpointSaverListener):
     self._gc = None
     if num_versions:
       self._gc = _DirectoryVersionGC(num_versions)
-      export_dir_contents = sorted(tf.gfile.ListDirectory(self._export_dir))
+      export_dir_contents = sorted(tf.io.gfile.listdir(self._export_dir))
       self._gc.observe_multiple([
           os.path.join(self._export_dir, filename)
           for filename in export_dir_contents
@@ -116,9 +116,9 @@ class LaggedCheckpointListener(CheckpointExportListener):
     if self._gc:
       self._lagged_gc = _DirectoryVersionGC(num_versions)
     tf.io.gfile.makedirs(self._lagged_export_dir)
-    export_dir_contents = sorted(tf.gfile.ListDirectory(self._export_dir))
+    export_dir_contents = sorted(tf.io.gfile.listdir(self._export_dir))
     lagged_export_dir_contents = sorted(
-        tf.gfile.ListDirectory(self._lagged_export_dir))
+        tf.io.gfile.listdir(self._lagged_export_dir))
 
     if self._gc:
       self._lagged_gc.observe_multiple([

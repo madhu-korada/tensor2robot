@@ -20,10 +20,12 @@ import gin
 from tensor2robot.utils import tensorspec_utils as utils
 from tensor2robot.utils import tfdata
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
-from tensorflow.contrib import framework as contrib_framework
+import tensorflow as tf  # tf
+# from tensorflow.contrib import framework as contrib_framework
 
-nest = contrib_framework.nest
+# nest = contrib_framework.nest
+from tensorflow.python.util import nest
+
 TrainValPair = collections.namedtuple(
     'TrainValPair', ['train', 'val', 'val_mode'])
 

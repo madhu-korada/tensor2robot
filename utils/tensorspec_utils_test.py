@@ -25,9 +25,10 @@ from absl.testing import parameterized
 import numpy as np
 from six.moves import zip
 from tensor2robot.utils import tensorspec_utils as utils
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import framework as contrib_framework
-nest = contrib_framework.nest
+import tensorflow as tf
+# from tensorflow.contrib import framework as contrib_framework
+# nest = contrib_framework.nest
+from tensorflow.python.util import nest
 
 TSPEC = utils.ExtendedTensorSpec
 
@@ -317,8 +318,8 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     })
     self.assertDictEqual(
         features, {
-            'images': tf.FixedLenFeature((), tf.string),
-            'actions': tf.FixedLenFeature(T2.shape, T2.dtype),
+            'images': tf.io.FixedLenFeature((), tf.string),
+            'actions': tf.io.FixedLenFeature(T2.shape, T2.dtype),
         })
     features, tensor_spec_dict = utils.tensorspec_to_feature_dict(
         mock_nested_subset_spec, decode_images=False)
@@ -328,8 +329,8 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     })
     self.assertDictEqual(
         features, {
-            'images': tf.FixedLenFeature(T1.shape, T1.dtype),
-            'actions': tf.FixedLenFeature(T2.shape, T2.dtype),
+            'images': tf.io.FixedLenFeature(T1.shape, T1.dtype),
+            'actions': tf.io.FixedLenFeature(T2.shape, T2.dtype),
         })
 
   def test_assert_equal_spec_or_tensor(self):
@@ -500,10 +501,10 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     self.assertEqual(desc.shape, tf.TensorShape((3, 2)))
 
   def test_shape_compatibility(self):
-    unknown = tf.placeholder(tf.int64)
-    partial = tf.placeholder(tf.int64, shape=[None, 1])
-    full = tf.placeholder(tf.int64, shape=[2, 3])
-    rank3 = tf.placeholder(tf.int64, shape=[4, 5, 6])
+    unknown = tf.compat.v1.placeholder(tf.int64)
+    partial = tf.compat.v1.placeholder(tf.int64, shape=[None, 1])
+    full = tf.compat.v1.placeholder(tf.int64, shape=[2, 3])
+    rank3 = tf.compat.v1.placeholder(tf.int64, shape=[4, 5, 6])
 
     desc_unknown = utils.ExtendedTensorSpec(None, tf.int64)
     self.assertTrue(desc_unknown.is_compatible_with(unknown))
@@ -530,8 +531,8 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     self.assertTrue(desc_rank3.is_compatible_with(rank3))
 
   def test_type_compatibility(self):
-    floats = tf.placeholder(tf.float32, shape=[10, 10])
-    ints = tf.placeholder(tf.int32, shape=[10, 10])
+    floats = tf.compat.v1.placeholder(tf.float32, shape=[10, 10])
+    ints = tf.compat.v1.placeholder(tf.int32, shape=[10, 10])
     desc = utils.ExtendedTensorSpec(shape=(10, 10), dtype=tf.float32)
     self.assertTrue(desc.is_compatible_with(floats))
     self.assertFalse(desc.is_compatible_with(ints))
@@ -600,8 +601,8 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     self.assertEqual(spec.name, 'Const')
 
   def test_from_placeholder(self):
-    unknown = tf.placeholder(tf.int64, name='unknown')
-    partial = tf.placeholder(tf.float32, shape=[None, 1], name='partial')
+    unknown = tf.compat.v1.placeholder(tf.int64, name='unknown')
+    partial = tf.compat.v1.placeholder(tf.float32, shape=[None, 1], name='partial')
     spec_1 = utils.ExtendedTensorSpec.from_tensor(unknown)
     self.assertEqual(spec_1.dtype, tf.int64)
     self.assertEqual(spec_1.shape, None)
@@ -627,7 +628,8 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     self.assertEqual(desc_overwrite.is_optional, not is_optional)
 
   def test_extended_from_spec(self):
-    desc = contrib_framework.TensorSpec(shape=[1], dtype=np.float32)
+    # desc = contrib_framework.TensorSpec(shape=[1], dtype=np.float32)
+    desc = tf.TensorSpec(shape=[1], dtype=np.float32)
     extended_desc = utils.ExtendedTensorSpec.from_spec(desc)
     self.assertEqual(desc, extended_desc)
 
@@ -686,7 +688,7 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
       return MockFoo(MockBar(T1, T2), MockBar(T1, T2))
 
   def _write_test_examples(self, data_of_lists, file_path):
-    writer = tf.python_io.TFRecordWriter(file_path)
+    writer = tf.io.TFRecordWriter(file_path)
     for data in data_of_lists:
       example = tf.train.Example()
       example.features.feature['varlen'].int64_list.value.extend(data)
@@ -709,10 +711,10 @@ class TensorspecUtilsTest(parameterized.TestCase, tf.test.TestCase):
     dataset = dataset.batch(len(input_data), drop_remainder=True)
 
     def parse_fn(example):
-      return tf.parse_example(example, {'varlen': tf.VarLenFeature(tf.int64)})
+      return tf.io.parse_example(example, {'varlen': tf.io.VarLenFeature(tf.int64)})
 
     dataset = dataset.map(parse_fn)
-    sparse_tensors = dataset.make_one_shot_iterator().get_next()['varlen']
+    sparse_tensors = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()['varlen']
     default_value = tf.cast(
         tf.constant(varlen_spec.varlen_default_value), dtype=varlen_spec.dtype)
     tensor = utils.pad_or_clip_tensor_to_spec_shape(

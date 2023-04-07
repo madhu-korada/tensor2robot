@@ -28,9 +28,11 @@ from tensor2robot.preprocessors import abstract_preprocessor
 from tensor2robot.research.dql_grasping_lib import tf_modules
 from tensor2robot.utils import tensorspec_utils
 from tensorflow.compat.v1 import estimator as tf_estimator
-import tensorflow.compat.v1 as tf  # tf
-from tensorflow.contrib import framework
-from tensorflow.contrib import layers
+import tensorflow as tf  # tf
+# from tensorflow.contrib import framework
+# from tensorflow.contrib import layers
+import tf_slim
+import tf_slim.layers as layers
 
 TensorSpec = tensorspec_utils.ExtendedTensorSpec  # pylint: disable=invalid-name
 
@@ -113,7 +115,7 @@ class PoseEnvContinuousMCModel(critic_model.CriticModel):
     reward_spec = TensorSpec(shape=(), dtype=tf.float32, name='reward')
     return tensorspec_utils.TensorSpecStruct(reward=reward_spec)
 
-  def _q_features(self, state, action, is_training=True, reuse=tf.AUTO_REUSE):
+  def _q_features(self, state, action, is_training=True, reuse=tf.compat.v1.AUTO_REUSE):
     """Compute feature representation of state and action.
 
     This method is re-used for computing partial context features for RL^2
@@ -133,8 +135,9 @@ class PoseEnvContinuousMCModel(critic_model.CriticModel):
     # State-action embedding module.
     net = state
     channels = 32
-    with tf.variable_scope('q_features', reuse=reuse):
-      with framework.arg_scope(tf_modules.argscope(is_training=is_training)):
+    with tf.compat.v1.variable_scope('q_features', reuse=reuse):
+      # with framework.arg_scope(tf_modules.argscope(is_training=is_training)):
+      with tf_slim.arg_scope(tf_modules.argscope(is_training=is_training)):
         for layer_index in range(3):
           net = layers.conv2d(net, channels, kernel_size=3)
           logging.info('conv%d %s', layer_index, net.get_shape())
@@ -148,7 +151,7 @@ class PoseEnvContinuousMCModel(critic_model.CriticModel):
                                   [num_batch_context, 1, 1, channels])
       action_context = tf.tile(action_context, [1, h, w, 1])
       net += action_context
-      net = tf.layers.flatten(net)
+      net = tf.compat.v1.layers.flatten(net)
     return net
 
   def q_func(self,
@@ -157,10 +160,10 @@ class PoseEnvContinuousMCModel(critic_model.CriticModel):
              mode,
              config = None,
              params = None,
-             reuse=tf.AUTO_REUSE):
+             reuse=tf.compat.v1.AUTO_REUSE):
     del params
     is_training = mode == TRAIN
-    with tf.variable_scope(scope, reuse=reuse, use_resource=True):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
       image = tf.image.convert_image_dtype(features.state.image, tf.float32)
       net = self._q_features(
           image, features.action.pose, is_training=is_training, reuse=reuse)
@@ -272,7 +275,7 @@ class PoseEnvRegressionModel(regression_model.RegressionModel):
       mode,
       config = None,
       params = None,
-      reuse=tf.AUTO_REUSE,
+      reuse=tf.compat.v1.AUTO_REUSE,
       context_fn=None,
   ):
     """A (state) regression function.
@@ -303,8 +306,8 @@ class PoseEnvRegressionModel(regression_model.RegressionModel):
     del config
     is_training = mode == TRAIN
     image = tf.image.convert_image_dtype(features.state, tf.float32)
-    with tf.variable_scope(scope, reuse=reuse, use_resource=True):
-      with tf.variable_scope('state_features', reuse=reuse, use_resource=True):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse, use_resource=True):
+      with tf.compat.v1.variable_scope('state_features', reuse=reuse, use_resource=True):
         feature_points, end_points = vision_layers.BuildImagesToFeaturesModel(
             image,
             is_training=is_training,
@@ -319,7 +322,7 @@ class PoseEnvRegressionModel(regression_model.RegressionModel):
 
   def loss_fn(self, labels, inference_outputs, mode, params=None):
     del mode
-    return tf.losses.mean_squared_error(
+    return tf.compat.v1.losses.mean_squared_error(
         labels=labels.target_pose,
         predictions=inference_outputs['inference_output'],
         weights=labels.reward)

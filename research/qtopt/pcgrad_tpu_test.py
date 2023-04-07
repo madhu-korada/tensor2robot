@@ -16,14 +16,14 @@
 """Tests for tensor2robot.research.qtopt.pcgrad."""
 
 from tensor2robot.research.qtopt import pcgrad
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class PcgradTest(tf.test.TestCase):
 
   def testPCgradNetworkTPU(self):
-    tf.reset_default_graph()
-    tf.disable_eager_execution()
+    tf.compat.v1.reset_default_graph()
+    tf.compat.v1.disable_eager_execution()
     learning_rate = lambda: 0.001
     def pcgrad_computation():
       x = tf.constant(1., shape=[64, 472, 472, 3])
@@ -42,9 +42,9 @@ class PcgradTest(tf.test.TestCase):
       task_losses = [task_loss_0 * (1. + (n / 10.)) for n in range(n_tasks)]
 
       pcgrad_opt = pcgrad.PCGrad(
-          tf.train.GradientDescentOptimizer(learning_rate))
+          tf.compat.v1.train.GradientDescentOptimizer(learning_rate))
       pcgrad_grads_and_vars = pcgrad_opt.compute_gradients(
-          task_losses, var_list=tf.trainable_variables())
+          task_losses, var_list=tf.compat.v1.trainable_variables())
       return pcgrad_opt.apply_gradients(pcgrad_grads_and_vars)
 
     tpu_computation = tf.compat.v1.tpu.batch_parallel(pcgrad_computation,

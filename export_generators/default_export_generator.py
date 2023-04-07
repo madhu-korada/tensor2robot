@@ -23,7 +23,7 @@ import six
 from tensor2robot.export_generators import abstract_export_generator
 from tensor2robot.utils import tensorspec_utils
 from tensor2robot.utils import tfdata
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.compat.v1 import estimator as tf_estimator
 
 MODE = tf_estimator.ModeKeys.PREDICT
@@ -117,7 +117,7 @@ class DefaultExportGenerator(abstract_export_generator.AbstractExportGenerator):
       for dataset_key in dataset_keys:
         receiver_name = 'input_example_' + six.ensure_str(
             (dataset_key or 'tensor'))
-        parse_tensors[dataset_key] = tf.placeholder(
+        parse_tensors[dataset_key] = tf.compat.v1.placeholder(
             dtype=tf.string, shape=[None], name=receiver_name)
         receiver_tensors[receiver_name] = parse_tensors[dataset_key]
       parse_tf_example_fn = tfdata.create_parse_tf_example_fn(

@@ -18,7 +18,7 @@
 from absl.testing import parameterized
 import numpy as np
 from tensor2robot.utils import subsample
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 
 
@@ -62,9 +62,9 @@ class SubsampleTest(parameterized.TestCase, tf.test.TestCase):
       'sampler': 'nofirstlast',
   })
   def test_subsampling(self, min_length, sampler):
-    testing_tensor1 = tf.placeholder(tf.float32, shape=(4, None))
-    testing_tensor2 = tf.placeholder(tf.float32, shape=(4, None))
-    sequence_lengths = tf.placeholder(tf.int64, shape=(4,))
+    testing_tensor1 = tf.compat.v1.placeholder(tf.float32, shape=(4, None))
+    testing_tensor2 = tf.compat.v1.placeholder(tf.float32, shape=(4, None))
+    sequence_lengths = tf.compat.v1.placeholder(tf.int64, shape=(4,))
     if sampler == 'default':
       indices = subsample.get_subsample_indices(sequence_lengths,
                                                 min_length)
@@ -77,7 +77,7 @@ class SubsampleTest(parameterized.TestCase, tf.test.TestCase):
                                                             min_length)
     sampled1 = tf.gather(testing_tensor1, indices, batch_dims=1)
     sampled2 = tf.gather(testing_tensor2, indices, batch_dims=1)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       input1 = np.array([[1, 2, 3, 4, 5, 6, 7],
                          [1, 2, 3, 4, 5, 6, 0],
                          [1, 2, 3, 4, 5, 0, 0],
@@ -156,14 +156,14 @@ class SubsampleTestRandomizedBoundary(parameterized.TestCase,
   })
 
   def test_subsampling_randomized_boundary(self, min_length):
-    testing_tensor1 = tf.placeholder(tf.float32, shape=(4, None))
-    testing_tensor2 = tf.placeholder(tf.float32, shape=(4, None))
-    sequence_lengths = tf.placeholder(tf.int64, shape=(4,))
+    testing_tensor1 = tf.compat.v1.placeholder(tf.float32, shape=(4, None))
+    testing_tensor2 = tf.compat.v1.placeholder(tf.float32, shape=(4, None))
+    sequence_lengths = tf.compat.v1.placeholder(tf.int64, shape=(4,))
     indices = subsample.get_subsample_indices_randomized_boundary(
         sequence_lengths, min_length, 2, 4)
     sampled1 = tf.gather(testing_tensor1, indices, batch_dims=1)
     sampled2 = tf.gather(testing_tensor2, indices, batch_dims=1)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       input1 = np.array([[1, 2, 3, 4, 5, 6, 7],
                          [1, 2, 3, 4, 5, 6, 0],
                          [1, 2, 3, 4, 5, 0, 0],
